@@ -237,7 +237,7 @@ export default function GroupesPage() {
     <div className="p-6">
       <div className="flex flex-col space-y-4 mb-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Groupes</h1>
+          <h1 className="text-2xl font-semibold">Mes Groupes</h1>
           <Dialog open={isCreateDialogOpen || !!editingGroupe} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button 

@@ -248,7 +248,7 @@ export default function EmetteurPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des émetteurs</h1>
+          <h1 className="text-3xl font-bold">Mes émetteurs</h1>
           <p className="text-muted-foreground">
             Gérez les émetteurs autorisés pour l'envoi de SMS
           </p>

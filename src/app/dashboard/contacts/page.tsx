@@ -167,7 +167,7 @@ export default function ContactsPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestion des contacts</h1>
+        <h1 className="text-2xl font-bold">Mes contacts</h1>
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">

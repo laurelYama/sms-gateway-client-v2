@@ -70,15 +70,78 @@ export default function FacturesPage() {
 
   const fetchCalendrier = async (year: number) => {
     try {
+      console.log(`Récupération du calendrier pour l'année ${year}...`);
       const data = await getCalendrierFacturation(year);
+      
+      if (!data || data.length === 0) {
+        console.log(`Aucune donnée de calendrier disponible pour l'année ${year}`);
+        setCalendrier([]);
+        toast({
+          title: 'Information',
+          description: `Aucun calendrier de facturation disponible pour l'année ${year}`,
+        });
+        return;
+      }
+      
+      console.log(`Calendrier chargé avec ${data.length} entrées`);
       setCalendrier(data);
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Erreur lors de la récupération du calendrier:', error);
+      
+      // Définir des valeurs par défaut
+      let errorMessage = 'Impossible de charger le calendrier de facturation';
+      let showYearSelector = false;
+      const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+      
+      // Gestion des erreurs spécifiques
+      if (error.status === 401) {
+        errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+        router.push('/login');
+        return;
+      } else if (error.status === 404 || error.code === 'YEAR_NOT_FOUND' || error.code === 'YEAR_NOT_OPEN') {
+        errorMessage = `L'année ${error.year || selectedYear} n'est pas disponible. Veuillez sélectionner une autre année.`;
+        showYearSelector = true;
+        
+        // Si l'année actuelle n'est pas disponible, essayer l'année précédente
+        if (years.includes(selectedYear - 1)) {
+          setSelectedYear(selectedYear - 1);
+          return; // La mise à jour de l'état déclenchera un nouvel appel
+        }
+      } else if (error.status === 403) {
+        errorMessage = 'Accès refusé. Vous n\'avez pas les droits pour accéder à cette ressource.';
+      } else if (error.status >= 500) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else if (error.message.includes('Format de réponse invalide')) {
+        errorMessage = 'Erreur de format de données reçues du serveur';
+      }
+      
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger le calendrier de facturation',
+        title: showYearSelector ? 'Année non disponible' : 'Erreur',
+        description: errorMessage,
         variant: 'destructive',
+        action: showYearSelector ? (
+          <div className="w-full mt-2">
+            <Select
+              value={String(selectedYear - 1)}
+              onValueChange={(value) => setSelectedYear(Number(value))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner une année" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={`year-${year}`} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : undefined,
       });
+      
+      setCalendrier([]);
     } finally {
       setLoading(false);
     }

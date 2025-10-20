@@ -74,8 +74,8 @@ export function LanguageSwitcher() {
           <CommandGroup>
             {languages.map((language) => (
               <CommandItem
-                key={language.value}
-                value={language.value}
+                key={language.code}
+                value={language.code}
                 onSelect={() => {
                   setSelectedLanguage(language.code);
                   setOpen(false);

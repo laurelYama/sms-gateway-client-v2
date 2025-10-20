@@ -54,6 +54,8 @@ export async function fetchEmetteurs(): Promise<Emetteur[]> {
       headers: Object.fromEntries(response.headers.entries())
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
       if (response.status === 401) {
         // Nettoyage en cas d'erreur 401
@@ -63,12 +65,20 @@ export async function fetchEmetteurs(): Promise<Emetteur[]> {
         throw new Error('Session expirée. Veuillez vous reconnecter.');
       }
       
-      const errorText = await response.text();
-      throw new Error(`Erreur ${response.status}: ${errorText || response.statusText}`);
+      console.error('Erreur de réponse:', response.status, response.statusText, responseText);
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     }
 
-    const data: Emetteur[] = await response.json();
-    return data;
+    try {
+      // Essayer de parser la réponse en JSON
+      const data = JSON.parse(responseText) as Emetteur[];
+      return data;
+    } catch (parseError) {
+      console.error('Erreur lors du parsing de la réponse JSON:', parseError);
+      console.error('Contenu de la réponse:', responseText);
+      // Retourner un tableau vide au lieu de planter l'application
+      return [];
+    }
   } catch (error) {
     console.error('Erreur lors de la récupération des émetteurs:', error);
     if (error instanceof Error && error.message.includes('401')) {

@@ -1,28 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { AlertCircle, Send, RefreshCw, Search, User, MessageSquare, Check, ChevronsUpDown } from 'lucide-react';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { fetchContacts } from '@/lib/api/contacts';
-import { fetchEmetteurs } from '@/lib/api/emetteurs';
+import { AlertCircle, Send, RefreshCw, Users, User, MessageSquare } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { API_ENDPOINTS } from '@/config/api';
+import GroupContactsSelector from '@/components/messages/group-contacts-selector';
+import { fetchEmetteurs } from '@/lib/api/emetteurs';
+
+interface ContactInfo {
+  number: string;
+  countryCode: string;
+  fullNumber: string;
+  contactName?: string;
+}
 
 export default function GroupMessagePage() {
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<ContactInfo[]>([]);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [emetteurs, setEmetteurs] = useState<Array<{id: string, nom: string}>>([]);
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
   const { toast } = useToast();
@@ -35,7 +37,7 @@ export default function GroupMessagePage() {
         const data = await fetchEmetteurs();
         setEmetteurs(data);
         if (data.length > 0) {
-          setSelectedEmetteur(data[0].id); // Sélectionner le premier émetteur par défaut
+          setSelectedEmetteur(data[0].id);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des émetteurs:', error);
@@ -50,99 +52,32 @@ export default function GroupMessagePage() {
     loadEmetteurs();
   }, [toast]);
 
-  // Fonction pour charger les contacts
-  const loadContacts = async () => {
-    try {
-      const data = await fetchContacts(''); // Récupère tous les contacts
-      // Trier les contacts par nom
-      const sortedContacts = [...data].sort((a, b) => 
-        a.contactName.localeCompare(b.contactName, 'fr', {sensitivity: 'base'})
-      );
-      setContacts(sortedContacts);
-      setFilteredContacts(sortedContacts);
-      setError('');
-    } catch (error) {
-      console.error('Erreur lors du chargement des contacts:', error);
-      setError('Impossible de charger les contacts. Veuillez réessayer plus tard.');
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les contacts. Veuillez réessayer plus tard.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Filtrer les contacts en fonction de la recherche
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredContacts(contacts);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = contacts.filter(
-        contact =>
-          contact.contactName.toLowerCase().includes(query) ||
-          contact.contactNumber.includes(query)
-      );
-      setFilteredContacts(filtered);
-    }
-  }, [searchQuery, contacts]);
-
-  useEffect(() => {
-    loadContacts();
-    // Nettoyage
-    return () => {
-      // Nettoyer les états si nécessaire
-    };
-  }, []);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-  
-  const clearSearch = () => {
-    setSearchQuery('');
-  };
-  
-  const selectAllContacts = () => {
-    setSelectedContacts(prev => {
-      // Si tous les contacts visibles sont déjà sélectionnés, on les désélectionne tous
-      const allVisibleSelected = filteredContacts.every(contact => 
-        prev.includes(contact.contactNumber)
-      );
+  // Gérer la sélection des contacts depuis le sélecteur de groupes
+  const handleSelectContacts = (contacts: (string | ContactInfo)[]) => {
+    // Filtrer les contacts invalides et normaliser le format
+    const validContacts = contacts
+      .filter(contact => contact) // Enlever les valeurs null/undefined
+      .map(contact => {
+        if (typeof contact === 'string') {
+          return { 
+            fullNumber: contact, 
+            countryCode: 'GA',
+            contactName: ''
+          };
+        }
+        return {
+          fullNumber: contact.fullNumber || '',
+          countryCode: contact.countryCode || 'GA',
+          contactName: contact.contactName || ''
+        };
+      })
+      .filter(contact => contact.fullNumber); // Ne garder que les contacts avec un numéro valide
       
-      if (allVisibleSelected) {
-        // Désélectionner uniquement les contacts visibles
-        return prev.filter(num => 
-          !filteredContacts.some(contact => contact.contactNumber === num)
-        );
-      } else {
-        // Ajouter les contacts visibles non encore sélectionnés
-        const newSelected = new Set(prev);
-        filteredContacts.forEach(contact => {
-          newSelected.add(contact.contactNumber);
-        });
-        return Array.from(newSelected);
-      }
-    });
-  };
-
-  const clearAllContacts = () => {
-    setSelectedContacts([]);
-  };
-
-  const handleContactSelect = (contactNumber: string) => {
-    setSelectedContacts(prev => {
-      if (prev.includes(contactNumber)) {
-        return prev.filter(num => num !== contactNumber);
-      } else {
-        return [...prev, contactNumber];
-      }
-    });
+    setSelectedContacts(validContacts);
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
-    // Vérifie que le numéro ne dépasse pas 12 caractères et ne contient que des chiffres
-    return /^\d{1,12}$/.test(phone);
+    return /^\d{1,15}$/.test(phone);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,11 +93,11 @@ export default function GroupMessagePage() {
     }
 
     // Vérifier que tous les numéros sont valides
-    const invalidNumbers = selectedContacts.filter(num => !validatePhoneNumber(num));
+    const invalidNumbers = selectedContacts.filter(contact => !validatePhoneNumber(contact.fullNumber));
     if (invalidNumbers.length > 0) {
       toast({
         title: 'Erreur',
-        description: `Certains numéros sont invalides (max 12 chiffres) : ${invalidNumbers.join(', ')}`,
+        description: `Certains numéros sont invalides : ${invalidNumbers.map(c => c.fullNumber).join(', ')}`,
         variant: 'destructive',
       });
       return;
@@ -201,61 +136,61 @@ export default function GroupMessagePage() {
         throw new Error('Émetteur sélectionné introuvable');
       }
 
+      // Préparer les numéros pour l'envoi
+      const numeros = selectedContacts.map(contact => {
+        if (contact.countryCode) {
+          if (contact.countryCode === 'GA' && !contact.fullNumber.startsWith('241')) {
+            return `241${contact.fullNumber}`;
+          }
+          if (contact.countryCode === 'FR' && !contact.fullNumber.startsWith('33')) {
+            return `33${contact.fullNumber}`;
+          }
+        }
+        return contact.fullNumber;
+      });
+
       const requestBody = {
         clientId,
-        emetteur: emetteurSelectionne.nom, // Utiliser le nom de l'émetteur sélectionné
-        numeros: selectedContacts,
+        emetteur: emetteurSelectionne.nom,
+        numeros,
         corps: message
       };
 
       console.log('Envoi de la requête avec le body:', JSON.stringify(requestBody, null, 2));
       
-      try {
-        const response = await fetch(API_ENDPOINTS.SMS.MULTIPLES, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
+      const response = await fetch(API_ENDPOINTS.SMS.MULTIPLES, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
 
-        console.log('Réponse reçue - Status:', response.status);
-        
-        if (!response.ok) {
-          console.error('Erreur API - Détails:', {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
-          });
-          const errorMessage = await response.text();
-          throw new Error(errorMessage);
-        }
-        
-        const responseData = await response.json();
-        
-        toast({
-          title: 'Succès',
-          description: `Message envoyé à ${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''}`,
-          variant: 'default',
+      console.log('Réponse reçue - Status:', response.status);
+      
+      if (!response.ok) {
+        console.error('Erreur API - Détails:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
         });
-
-        // Réinitialiser après l'envoi
-        setSelectedContacts([]);
-        setMessage('');
-      } catch (error) {
-        console.error('Erreur lors de l\'envoi des messages groupés:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
-        setError(errorMessage);
-        toast({
-          title: 'Erreur',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
+        const errorMessage = await response.text();
+        throw new Error(errorMessage);
       }
+      
+      const responseData = await response.json();
+      
+      toast({
+        title: 'Succès',
+        description: `Message envoyé à ${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''}`,
+        variant: 'default',
+      });
+
+      // Réinitialiser après l'envoi
+      setSelectedContacts([]);
+      setMessage('');
     } catch (error) {
       console.error('Erreur lors de l\'envoi des messages groupés:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
@@ -265,6 +200,8 @@ export default function GroupMessagePage() {
         description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -273,53 +210,127 @@ export default function GroupMessagePage() {
       <div className="flex-1 p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Carte d'envoi de message */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 order-2 lg:order-1 space-y-6">
             <Card>
               <CardHeader className="pb-4">
-                <div>
-                  <CardTitle className="text-lg">Envoi de message groupé</CardTitle>
-                  <p className="text-sm text-muted-foreground">Envoi de message à plusieurs destinataires</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">Envoi de message groupé</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedContacts.length > 0 
+                        ? `${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''} sélectionné${selectedContacts.length > 1 ? 's' : ''}` 
+                        : 'Sélectionnez un groupe ou des contacts individuels'}
+                    </p>
+                  </div>
+                  {selectedContacts.length > 0 && (
+                    <div className="bg-primary/10 text-primary text-sm px-3 py-1 rounded-full">
+                      {selectedContacts.length} contact{selectedContacts.length > 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
               </CardHeader>
-              <div className="px-6 pb-6">
+              <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-4">
                     <div>
                       <Label className="flex items-center gap-2 text-base font-medium mb-2">
-                        <User className="h-4 w-4" />
-                        Destinataires
+                        <Users className="h-4 w-4" />
+                        Sélection des destinataires
                       </Label>
                       
                       {selectedContacts.length > 0 && (
                         <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                          <p className="text-sm font-medium mb-3">Destinataires sélectionnés :</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedContacts.map(contactNumber => {
-                              const contact = contacts.find(c => c.contactNumber === contactNumber);
-                              return (
-                                <div 
-                                  key={contactNumber}
-                                  className="bg-primary/10 text-primary text-sm px-3 py-1 rounded-full flex items-center gap-2"
-                                >
-                                  {contact?.contactName || contactNumber}
-                                  <button 
-                                    type="button"
-                                    onClick={() => handleContactSelect(contactNumber)}
-                                    className="text-muted-foreground hover:text-destructive text-sm"
+                          <div className="flex justify-between items-center mb-3">
+                            <p className="text-sm font-medium">
+                              {selectedContacts.length} destinataire{selectedContacts.length > 1 ? 's' : ''} sélectionné{selectedContacts.length > 1 ? 's' : ''}
+                            </p>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedContacts([])}
+                              className="text-destructive hover:text-destructive/80"
+                            >
+                              Tout effacer
+                            </Button>
+                          </div>
+                          <div className="max-h-40 overflow-y-auto space-y-1 p-1">
+                            <div className="flex flex-wrap gap-2">
+                              {selectedContacts.map((contact, index) => {
+                                // Vérifier si le contact est valide
+                                if (!contact) return null;
+                                
+                                // Normaliser le format du contact
+                                let contactInfo;
+                                if (typeof contact === 'string') {
+                                  contactInfo = { 
+                                    fullNumber: contact, 
+                                    countryCode: 'GA',
+                                    contactName: ''
+                                  };
+                                } else {
+                                  contactInfo = {
+                                    fullNumber: contact.fullNumber || '',
+                                    countryCode: contact.countryCode || 'GA',
+                                    contactName: contact.contactName || ''
+                                  };
+                                }
+                                
+                                // Vérifier si le numéro est valide
+                                if (!contactInfo.fullNumber) return null;
+                                
+                                // Extraire les 4 derniers chiffres pour l'affichage
+                                const lastDigits = contactInfo.fullNumber.slice(-4);
+                                const displayName = contactInfo.contactName || `+${contactInfo.countryCode === 'GA' ? '241' : '33'}...${lastDigits}`;
+                                
+                                return (
+                                  <div 
+                                    key={`${contactInfo.fullNumber}-${index}`}
+                                    className="inline-flex items-center gap-1 bg-muted/50 hover:bg-muted rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
                                   >
-                                    ×
-                                  </button>
-                                </div>
-                              );
-                            })}
+                                    <input
+                                      type="checkbox"
+                                      checked={true}
+                                      onChange={() => setSelectedContacts(prev => 
+                                        prev.filter((_, i) => i !== index)
+                                      )}
+                                      className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="truncate max-w-[100px]">
+                                      {displayName}
+                                    </span>
+                                    <button 
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedContacts(prev => 
+                                          prev.filter((_, i) => i !== index)
+                                        );
+                                      }}
+                                      className="ml-1 text-muted-foreground hover:text-destructive"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
+                      
+                      <div className="mb-4 lg:hidden">
+                        <GroupContactsSelector 
+                          onSelectContacts={handleSelectContacts}
+                          selectedContacts={selectedContacts.map(c => c ? c.fullNumber : '').filter(Boolean)}
+                        />
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="emetteur">
+                        <Label htmlFor="emetteur" className="flex items-center gap-2">
+                          <Send className="h-4 w-4" />
                           Émetteur
                         </Label>
                         <Select
@@ -338,6 +349,11 @@ export default function GroupMessagePage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {emetteurs.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            Aucun émetteur disponible. Veuillez en créer un dans les paramètres.
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -345,20 +361,30 @@ export default function GroupMessagePage() {
                       <div className="flex items-center justify-between">
                         <Label htmlFor="message" className="flex items-center gap-2 text-base font-medium">
                           <MessageSquare className="h-4 w-4" />
-                          Message
+                          Message groupé
                         </Label>
-                        <span className="text-xs text-muted-foreground">
-                          {message.length}/160 caractères
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs text-muted-foreground">
+                            {message.length}/160 caractères • {Math.ceil(message.length / 160)} SMS par destinataire
+                          </span>
+                          {selectedContacts.length > 0 && message.length > 0 && (
+                            <span className="text-xs font-medium text-primary">
+                              Total : {selectedContacts.length * Math.ceil(message.length / 160)} SMS
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <Textarea
                         id="message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Saisissez votre message ici..."
-                        className="min-h-[120px]"
+                        className="min-h-[150px] font-mono text-sm"
                         maxLength={160}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Le message sera envoyé à {selectedContacts.length} destinataire{selectedContacts.length > 1 ? 's' : ''}.
+                      </p>
                     </div>
                   
                     {error && (
@@ -368,11 +394,32 @@ export default function GroupMessagePage() {
                       </div>
                     )}
                     
-                    <div className="flex justify-end pt-4 border-t">
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div className="text-sm text-muted-foreground">
+                        {selectedContacts.length > 0 ? (
+                          <div className="space-y-1">
+                            <div>
+                              <span className="font-medium">{selectedContacts.length}</span> destinataire{selectedContacts.length > 1 ? 's' : ''} sélectionné{selectedContacts.length > 1 ? 's' : ''}
+                            </div>
+                            {message.length > 0 && (
+                              <div className="text-xs">
+                                <span className="font-medium">{Math.ceil(message.length / 160)}</span> SMS × {selectedContacts.length} destinataires = 
+                                <span className="font-bold text-primary ml-1">
+                                  {selectedContacts.length * Math.ceil(message.length / 160)} SMS au total
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            Sélectionnez des destinataires
+                          </div>
+                        )}
+                      </div>
                       <Button 
                         type="submit" 
                         className="gap-2"
-                        disabled={isLoading || selectedContacts.length === 0 || !message.trim()}
+                        disabled={isLoading || selectedContacts.length === 0 || !message.trim() || !selectedEmetteur}
                       >
                         {isLoading ? (
                           <>
@@ -389,147 +436,26 @@ export default function GroupMessagePage() {
                     </div>
                   </div>
                 </form>
-              </div>
+              </CardContent>
             </Card>
           </div>
           
-          {/* Panneau latéral des contacts */}
-          <div className="space-y-4">
+          {/* Panneau latéral des groupes */}
+          <div className="lg:col-span-1 order-1 lg:order-2 space-y-6">
             <Card>
-              <CardHeader className="pb-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Contacts</CardTitle>
-                    <span className="text-sm text-muted-foreground">{contacts.length} contacts</span>
-                  </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Rechercher par nom ou numéro..."
-                      className="pl-9 pr-8 h-9 text-sm w-full"
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={clearSearch}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={selectAllContacts}
-                      className="whitespace-nowrap"
-                    >
-                      {filteredContacts.every(contact => selectedContacts.includes(contact.contactNumber)) 
-                        ? 'Tout décocher' 
-                        : 'Tout cocher'}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={clearAllContacts}
-                      disabled={selectedContacts.length === 0}
-                      className="whitespace-nowrap"
-                    >
-                      Tout supprimer
-                    </Button>
-                  </div>
-                </div>
+              <CardHeader>
+                <CardTitle className="text-lg">Groupes de contacts</CardTitle>
               </CardHeader>
-              <div className="px-4 pb-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : error ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-destructive">
-                    <AlertCircle className="h-5 w-5 mb-2" />
-                    <p>{error}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2"
-                      onClick={loadContacts}
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Réessayer
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="max-h-[calc(100vh-300px)] overflow-y-auto rounded-md border">
-                      {filteredContacts.length > 0 ? (
-                        <ul className="divide-y">
-                          {filteredContacts.map((contact) => (
-                            <li key={contact.contactNumber} className="group">
-                              <div className="flex items-center px-4 py-3 hover:bg-accent/50">
-                                <input
-                                  type="checkbox"
-                                  id={`contact-${contact.contactNumber}`}
-                                  checked={selectedContacts.includes(contact.contactNumber)}
-                                  onChange={() => handleContactSelect(contact.contactNumber)}
-                                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <label
-                                  htmlFor={`contact-${contact.contactNumber}`}
-                                  className="ml-3 flex-1 cursor-pointer"
-                                >
-                                  <div className="font-medium text-foreground">
-                                    {contact.contactName}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {contact.contactNumber}
-                                  </div>
-                                </label>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
-                          <User className="h-8 w-8 mb-2 text-muted-foreground/50" />
-                          <p>Aucun contact trouvé</p>
-                          {searchQuery && (
-                            <button
-                              type="button"
-                              onClick={clearSearch}
-                              className="mt-2 text-sm text-primary hover:underline"
-                            >
-                              Réinitialiser la recherche
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <CardContent>
+                <GroupContactsSelector 
+                  onSelectContacts={handleSelectContacts}
+                  selectedContacts={selectedContacts.map(c => c.fullNumber)}
+                />
+              </CardContent>
             </Card>
           </div>
         </div>
       </div>
     </div>
   );
+}

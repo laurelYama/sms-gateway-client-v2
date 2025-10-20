@@ -1,6 +1,5 @@
 import { getTokenFromCookies, getUserFromCookies } from '@/lib/auth';
-
-const API_URL = 'https://api-smsgateway.solutech-one.com/api/V1';
+import { API_BASE_URL } from '@/config/api';
 
 interface MessageUnides {
   ref: string;
@@ -47,7 +46,22 @@ export const fetchMessages = async (
   const user = getUserFromCookies();
   if (!user || !user.id) throw new Error('Utilisateur non connecté');
   
-  const url = `${API_URL}/sms/${type}/${user.id}`;
+  // Construire l'URL en fonction du type de message
+  let url: string;
+  
+  switch (type) {
+    case 'unides':
+      url = `${API_BASE_URL}/api/V1/sms/unides/${user.id}`;
+      break;
+    case 'muldes':
+      url = `${API_BASE_URL}/api/V1/sms/muldes/${user.id}`;
+      break;
+    case 'muldesp':
+      url = `${API_BASE_URL}/api/V1/sms/muldesp/${user.id}`;
+      break;
+    default:
+      throw new Error(`Type de message non supporté: ${type}`);
+  }
   
   const response = await fetch(url, {
     headers: {

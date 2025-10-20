@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { AlertCircle, Send, Calendar, Clock, RefreshCw, User, MessageSquare, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import GroupContactsSelector from '@/components/messages/group-contacts-selector';
 import { fetchContacts } from '@/lib/api/contacts';
 import { fetchEmetteurs } from '@/lib/api/emetteurs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,11 +18,15 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getTokenFromCookies, getUserFromCookies } from '@/lib/auth';
+import { API_ENDPOINTS } from '@/config/api';
 
 export default function ScheduledMessagePage() {
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<Array<{contactNumber: string, contactName: string}>>([]);
+  const [filteredContacts, setFilteredContacts] = useState<Array<{contactNumber: string, contactName: string}>>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [isGroupSelectorOpen, setIsGroupSelectorOpen] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const { toast } = useToast();
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,52 +37,67 @@ export default function ScheduledMessagePage() {
   const [dateFin, setDateFin] = useState<Date | undefined>(new Date());
   const [nbParJour, setNbParJour] = useState(1);
   const [intervalleMinutes, setIntervalleMinutes] = useState(0);
-  const { toast } = useToast();
   const router = useRouter();
   
-  // Charger les émetteurs et les contacts au montage du composant
+  // Gestion des erreurs
+  const showError = (message: string) => {
+    if (typeof window !== 'undefined') {
+      toast({
+        title: 'Erreur',
+        description: message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Charger les émetteurs
   useEffect(() => {
-    const loadData = async () => {
+    const loadEmetteurs = async () => {
       try {
-        // Charger les émetteurs
         const emetteursData = await fetchEmetteurs();
-        setEmetteurs(emetteursData);
-        if (emetteursData.length > 0) {
-          setSelectedEmetteur(emetteursData[0].nom);
+        if (emetteursData && Array.isArray(emetteursData)) {
+          setEmetteurs(emetteursData);
+          if (emetteursData.length > 0) {
+            setSelectedEmetteur(emetteursData[0].nom);
+          }
+        } else {
+          throw new Error('Format de données invalide pour les émetteurs');
         }
-        
-        // Charger les contacts
-        const contactsData = await fetchContacts('');
-        setContacts(contactsData);
-        setFilteredContacts(contactsData);
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les données nécessaires',
-          variant: 'destructive',
-        });
+        console.error('Erreur lors du chargement des émetteurs:', error);
+        showError('Impossible de charger la liste des émetteurs');
       }
     };
     
-    loadData();
-  }, [toast]);
+    loadEmetteurs();
+  }, []);
 
-  // Filtrer les contacts en fonction de la recherche
+  // Mettre à jour les contacts filtrés lorsqu'ils changent
   useEffect(() => {
-    if (!searchQuery) {
-      setFilteredContacts(contacts);
-      return;
-    }
+    setFilteredContacts(contacts);
+  }, [contacts]);
+  
+  // Charger les contacts initiaux
+  useEffect(() => {
+    const loadContacts = async () => {
+      try {
+        const user = getUserFromCookies();
+        if (user?.id) {
+          const contactsData = await fetchContacts({});
+          if (contactsData && Array.isArray(contactsData)) {
+            setContacts(contactsData);
+          } else {
+            throw new Error('Format de données invalide pour les contacts');
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des contacts:', error);
+        showError('Impossible de charger la liste des contacts');
+      }
+    };
     
-    const query = searchQuery.toLowerCase();
-    const filtered = contacts.filter(contact => 
-      contact.contactName?.toLowerCase().includes(query) || 
-      contact.contactNumber?.includes(query)
-    );
-    
-    setFilteredContacts(filtered);
-  }, [searchQuery, contacts]);
+    loadContacts();
+  }, []);
 
   const handleContactToggle = (contactNumber: string) => {
     setSelectedContacts(prev => 
@@ -86,6 +105,7 @@ export default function ScheduledMessagePage() {
         ? prev.filter(num => num !== contactNumber)
         : [...prev, contactNumber]
     );
+  
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -161,7 +181,7 @@ export default function ScheduledMessagePage() {
       
       console.log('Envoi de la requête avec le body:', JSON.stringify(requestBody, null, 2));
       
-      const response = await fetch(API_ENDPOINTS.SMS_PROGRAMMES, {
+      const response = await fetch(API_ENDPOINTS.SMS.PROGRAMMES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -428,145 +448,29 @@ export default function ScheduledMessagePage() {
             </Card>
           </div>
           
-          {/* Carte de sélection des contacts */}
+          {/* Carte de sélection des groupes */}
           <div className="space-y-6">
             <Card>
               <CardHeader className="pb-4">
                 <div>
-                  <CardTitle className="text-lg">Contacts</CardTitle>
-                  <p className="text-sm text-muted-foreground">Sélectionnez les destinataires</p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Groupes de contacts</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Sélectionnez un groupe pour voir les contacts</p>
                 </div>
               </CardHeader>
               <div className="px-4 pb-4">
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Rechercher un contact..."
-                      className="w-full pl-8"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2 px-2 py-2">
-                    <Button
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        const allVisibleSelected = filteredContacts.every(contact => 
-                          selectedContacts.includes(contact.contactNumber)
-                        );
-                        
-                        if (allVisibleSelected) {
-                          // Si tout est déjà sélectionné, on décoche tout
-                          setSelectedContacts(prev => 
-                            prev.filter(num => 
-                              !filteredContacts.some(contact => contact.contactNumber === num)
-                            )
-                          );
-                        } else {
-                          // Sinon on coche tout ce qui est visible
-                          const newSelected = new Set(selectedContacts);
-                          filteredContacts.forEach(contact => {
-                            newSelected.add(contact.contactNumber);
-                          });
-                          setSelectedContacts(Array.from(newSelected));
-                        }
-                      }}
-                      className="whitespace-nowrap text-xs h-7"
-                    >
-                      {filteredContacts.length > 0 && filteredContacts.every(contact => 
-                        selectedContacts.includes(contact.contactNumber)
-                      ) ? 'Tout décocher' : 'Tout cocher'}
-                    </Button>
-                    {selectedContacts.length > 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="text-xs h-7 whitespace-nowrap"
-                        onClick={() => setSelectedContacts(prev => [])}
-                      >
-                        Tout effacer
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                {filteredContacts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
-                    <User className="h-8 w-8 mb-2 text-muted-foreground/50" />
-                    <p>{searchQuery ? 'Aucun contact trouvé' : 'Aucun contact disponible'}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="max-h-[calc(100vh-450px)] overflow-y-auto rounded-md border">
-                      <ul className="divide-y">
-                        {filteredContacts.map((contact) => (
-                          <li key={contact.contactNumber} className="group">
-                            <button
-                              type="button"
-                              onClick={() => handleContactToggle(contact.contactNumber)}
-                              className={`w-full text-left p-3 hover:bg-accent/50 transition-colors ${
-                                selectedContacts.includes(contact.contactNumber) ? 'bg-accent/30' : ''
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-medium text-foreground">
-                                    {contact.contactName}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {contact.contactNumber}
-                                  </div>
-                                </div>
-                                {selectedContacts.includes(contact.contactNumber) && (
-                                  <div className="text-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="flex justify-between items-center px-2 py-1.5 text-xs text-muted-foreground border-t bg-muted/20">
-                      <span>
-                        {filteredContacts.length} contact{filteredContacts.length > 1 ? 's' : ''} trouvé{filteredContacts.length > 1 ? 's' : ''}
-                      </span>
-                      <span>
-                        {selectedContacts.length} sélectionné{selectedContacts.length > 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <GroupContactsSelector 
+                  selectedContacts={selectedContacts}
+                  onSelectContacts={(contacts) => {
+                    // Conversion des contacts en tableau de chaînes si nécessaire
+                    const contactNumbers = contacts.map(contact => 
+                      typeof contact === 'string' ? contact : contact.fullNumber
+                    );
+                    setSelectedContacts(contactNumbers);
+                  }}
+                />
               </div>
             </Card>
           </div>

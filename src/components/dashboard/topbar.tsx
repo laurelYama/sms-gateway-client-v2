@@ -1,30 +1,36 @@
 'use client';
 
-import { useState } from 'react';
 import { Menu, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 
-export function Topbar() {
+interface TopbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
 
-  // Obtenir le titre de la page actuelle
-  const getPageTitle = () => {
-    const path = pathname.split('/').pop() || 'Tableau de bord';
-    return path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
-  };
+  // Titre fixe pour la barre supérieure
+  const pageTitle = 'SMS Gateway';
 
   return (
     <header className="bg-white shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="md:hidden">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden"
+            onClick={onMenuClick}
+            aria-label="Ouvrir le menu"
+          >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="ml-2 text-xl font-semibold text-gray-900">
-            {getPageTitle()}
+          <h1 className="ml-2 text-lg md:text-xl font-semibold text-gray-900">
+            {pageTitle}
           </h1>
         </div>
         
@@ -35,7 +41,7 @@ export function Topbar() {
             onClick={() => {
               // Créer un lien de téléchargement pour la documentation
               const link = document.createElement('a');
-              link.href = '/Documentation SMS Gateway.pdf';
+              link.href = '/Documentation-SMS-Gateway.pdf';
               link.download = 'Documentation_SMS_Gateway.pdf';
               document.body.appendChild(link);
               link.click();

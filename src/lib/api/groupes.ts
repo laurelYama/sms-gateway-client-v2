@@ -16,12 +16,14 @@ export async function getGroupes(clientId: string): Promise<Groupe[]> {
     console.log('[DEBUG] getGroupes - clientId:', clientId);
     
     if (!clientId) {
-      throw new Error('ID client manquant pour la récupération des groupes');
+      console.error('ID client manquant pour la récupération des groupes');
+      return [];
     }
     
     const token = getTokenFromCookies();
     if (!token) {
-      throw new Error('Token d\'authentification manquant');
+      console.error('Token d\'authentification manquant');
+      return [];
     }
     
     const url = `${API_URL}?clientId=${encodeURIComponent(clientId)}`;
@@ -35,15 +37,15 @@ export async function getGroupes(clientId: string): Promise<Groupe[]> {
       },
     });
     
+    const responseText = await response.text();
     console.log('[DEBUG] getGroupes - Statut de la réponse:', response.status);
     
     if (!response.ok) {
-      const errorText = await response.text();
       console.error('[ERROR] getGroupes - Erreur de l\'API:', {
         status: response.status,
         statusText: response.statusText,
         url: response.url,
-        error: errorText
+        response: responseText
       });
       
       if (response.status === 401) {
@@ -53,12 +55,34 @@ export async function getGroupes(clientId: string): Promise<Groupe[]> {
         window.location.href = '/login';
       }
       
-      throw new Error(`Erreur ${response.status}: ${response.statusText || 'Erreur lors de la récupération des groupes'}`);
+      return [];
     }
     
-    const data = await response.json();
-    console.log('[DEBUG] getGroupes - Données reçues:', data);
-    return data;
+    try {
+      const data = JSON.parse(responseText);
+      console.log('[DEBUG] getGroupes - Données reçues:', data);
+      
+      // Vérifier si la réponse est un tableau
+      if (Array.isArray(data)) {
+        return data as Groupe[];
+      }
+      
+      // Si ce n'est pas un tableau, essayer d'extraire un tableau d'une propriété
+      console.warn('La réponse de l\'API n\'est pas un tableau. Type reçu:', typeof data, 'Valeur:', data);
+      const possibleArray = data?.data || data?.items || data?.groupes;
+      
+      if (Array.isArray(possibleArray)) {
+        console.log('Tableau trouvé dans une propriété de l\'objet:', possibleArray);
+        return possibleArray as Groupe[];
+      }
+      
+      console.warn('Aucun tableau valide trouvé dans la réponse');
+      return [];
+    } catch (parseError) {
+      console.error('Erreur lors du parsing de la réponse JSON:', parseError);
+      console.error('Contenu de la réponse:', responseText);
+      return [];
+    }
   } catch (error) {
     console.error('[ERROR] getGroupes - Erreur:', error);
     throw error;

@@ -1,4 +1,4 @@
-import { MessageSimpleForm } from '@/components/messages/message-simple-form';
+import { MessageSimpleForm } from '@/components/messages/MessageSimpleForm';
 
 export default function SimpleMessagePage() {
   return (

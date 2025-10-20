@@ -34,8 +34,9 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
   const [groupes, setGroupes] = useState<Array<{id: string, nomGroupe: string}>>([]);
   const [loadingGroupes, setLoadingGroupes] = useState(true);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(groupId || '');
-  const [countries, setCountries] = useState<Array<{id: string, name: string, prefix: string, originalId: number}>>([]);
-  const [selectedCountry, setSelectedCountry] = useState<{code: string, prefix: string}>({ code: 'FR', prefix: '+33' });
+  const [countries, setCountries] = useState<Array<{keyValue: string, value1: string, value2: string}>>([]);
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [countryCode, setCountryCode] = useState('');
 
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(formSchema),
@@ -46,53 +47,37 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
     },
   });
 
-  // Charger les pays et les groupes
+  // Charger les pays depuis l'API
   useEffect(() => {
     const loadCountries = async () => {
       try {
-        const countriesData = await fetchCountryCodes();
-        console.log('Données des pays chargées:', countriesData);
+        const countryData = await fetchCountryCodes();
         
-        // Vérifier que nous avons des données et qu'elles sont dans le format attendu
-        if (!Array.isArray(countriesData)) {
-          console.error('Format de données inattendu:', countriesData);
-          throw new Error('Format de données des pays invalide');
+        if (!countryData || countryData.length === 0) {
+          console.warn('Aucun pays disponible');
+          setCountries([]);
+          setSelectedCountry('');
+          setCountryCode('');
+          return;
         }
         
-        // Créer un ensemble pour suivre les préfixes déjà vus
-        const seenPrefixes = new Set();
-        const countriesList = [];
+        const sortedCountries = [...countryData].sort((a, b) => 
+          a.value1.localeCompare(b.value1, 'fr', {sensitivity: 'base'})
+        );
         
-        for (const country of countriesData) {
-          const prefix = country.value2.trim();
-          // Si le préfixe n'a pas encore été vu, l'ajouter à la liste
-          if (!seenPrefixes.has(prefix)) {
-            seenPrefixes.add(prefix);
-            countriesList.push({
-              id: `country-${country.refID}-${prefix}`,
-              name: country.value1.trim(),
-              prefix,
-              originalId: country.refID
-            });
-          }
-        }
+        setCountries(sortedCountries);
         
-        // Trier par nom de pays
-        countriesList.sort((a, b) => a.name.localeCompare(b.name));
-        
-        console.log(`${countriesList.length} pays uniques chargés`);
-        
-        setCountries(countriesList);
-        
-        // Sélectionner le premier pays par défaut
-        if (countriesList.length > 0) {
-          setSelectedCountry({
-            code: countriesList[0].name.substring(0, 2).toUpperCase(),
-            prefix: countriesList[0].prefix
-          });
+        // Sélectionner le premier pays de la liste
+        if (sortedCountries.length > 0) {
+          const defaultCountry = sortedCountries[0];
+          setSelectedCountry(defaultCountry.keyValue);
+          setCountryCode(defaultCountry.value2);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des pays:', error);
+        setCountries([]);
+        setSelectedCountry('');
+        setCountryCode('');
       }
     };
 
@@ -193,14 +178,20 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       
       console.log('4. Préparation de la requête API');
       
+      // Récupérer les données du pays sélectionné
+      const selectedCountryData = countries.find(c => c.keyValue === selectedCountry);
+      
       // Formater le numéro de téléphone avec l'indicatif du pays
-      const formattedNumber = `${selectedCountry.prefix}${data.number.replace(/\s+/g, '')}`;
+      const cleanNumber = data.number.replace(/\s+/g, '');
+      const formattedNumber = selectedCountryData ? 
+        `${selectedCountryData.value2}${cleanNumber}` : 
+        `+${cleanNumber}`;
       
       const requestBody = {
         groupId: data.groupId,
         number: formattedNumber,
         name: data.name,
-        countryCode: selectedCountry.code
+        countryCode: selectedCountryData?.value2 || ''
       };
       
       console.log('Données de la requête:', JSON.stringify(requestBody, null, 2));
@@ -212,7 +203,7 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        credentials: 'include', // Important pour les cookies d'authentification
+        credentials: 'include',
         body: JSON.stringify(requestBody)
       });
       
@@ -230,7 +221,11 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       
       toast.success('Contact ajouté avec succès');
       setOpen(false);
-      form.reset();
+      form.reset({
+        name: '',
+        number: '',
+        groupId: groupId || ''
+      });
       onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de l\'ajout du contact:', error);
@@ -293,40 +288,37 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 <FormField
                   name="countryCode"
                   render={() => (
-                    <FormItem className="w-48">
-                      <FormLabel>Pays (indicatif)</FormLabel>
-                      <Select
-                        value={selectedCountry?.prefix}
-                        onValueChange={(value) => {
-                          const country = countries.find(c => c.prefix === value);
-                          if (country) {
-                            setSelectedCountry({
-                              code: country.name.substring(0, 2).toUpperCase(),
-                              prefix: country.prefix
-                            });
-                          }
-                        }}
-                        disabled={loading || countries.length === 0}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            countries.length === 0 ? 'Chargement...' : 'Sélectionnez un pays'
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countries.map((country) => (
-                            <SelectItem 
-                              key={country.id}
-                              value={country.prefix}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="font-medium">{country.name}</span>
-                              <span className="text-muted-foreground">{country.prefix}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
+                    <div className="flex gap-2">
+                      <div className="w-1/3">
+                        <Select
+                          value={selectedCountry}
+                          onValueChange={(value) => {
+                            const country = countries.find(c => c.keyValue === value);
+                            if (country) {
+                              setSelectedCountry(value);
+                              setCountryCode(country.value2);
+                            }
+                          }}
+                          disabled={loading || countries.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={
+                              countries.length === 0 ? 'Chargement...' : 'Sélectionnez un pays'
+                            } />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countries.map((country) => (
+                              <SelectItem 
+                                key={country.keyValue} 
+                                value={country.keyValue}
+                              >
+                                {country.value1} ({country.value2})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   )}
                 />
                 <FormField
@@ -336,23 +328,17 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                     <FormItem className="flex-1">
                       <FormLabel>Numéro de téléphone *</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            {selectedCountry?.prefix}
-                          </div>
-                          <Input 
-                            placeholder="6 12 34 56 78" 
-                            {...field} 
-                            disabled={loading}
-                            className="pl-16"
-                            value={field.value || ''}
-                            onChange={(e) => {
-                              // N'autoriser que les chiffres et espaces
-                              const value = e.target.value.replace(/[^\d\s]/g, '');
-                              field.onChange(value);
-                            }}
-                          />
-                        </div>
+                        <Input 
+                          placeholder="6 12 34 56 78" 
+                          {...field} 
+                          disabled={loading}
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            // N'autoriser que les chiffres et espaces
+                            const value = e.target.value.replace(/[^\d\s]/g, '');
+                            field.onChange(value);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

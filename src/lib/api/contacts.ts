@@ -76,38 +76,48 @@ export async function fetchContacts(searchParams?: ContactSearchParams): Promise
       headers: Object.fromEntries(response.headers.entries())
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erreur de réponse:', errorText);
+      console.error('Erreur de réponse:', response.status, response.statusText, responseText);
       
       if (response.status === 401) {
         console.error('Erreur 401: Non autorisé - Redirection vers la page de connexion');
         window.location.href = '/login';
+        return [];
       }
       
-      throw new Error(`Erreur ${response.status}: ${response.statusText} - ${errorText}`);
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    console.log('Données brutes de l\'API:', data);
-    
-    // Vérifier si la réponse est un tableau
-    if (!Array.isArray(data)) {
-      console.error('La réponse de l\'API n\'est pas un tableau. Type reçu:', typeof data, 'Valeur:', data);
-      // Essayer d'extraire un tableau d'une propriété de l'objet
-      const possibleArray = data.data || data.items || data.contacts || [];
+    try {
+      // Essayer de parser la réponse en JSON
+      const data = JSON.parse(responseText);
+      console.log('Données brutes de l\'API:', data);
+      
+      // Vérifier si la réponse est un tableau
+      if (Array.isArray(data)) {
+        console.log('Contacts traités:', data);
+        return data as Contact[];
+      }
+      
+      // Si ce n'est pas un tableau, essayer d'extraire un tableau d'une propriété
+      console.warn('La réponse de l\'API n\'est pas un tableau. Type reçu:', typeof data, 'Valeur:', data);
+      const possibleArray = data?.data || data?.items || data?.contacts;
       
       if (Array.isArray(possibleArray)) {
         console.log('Tableau trouvé dans une propriété de l\'objet:', possibleArray);
         return possibleArray as Contact[];
       }
       
+      console.warn('Aucun tableau valide trouvé dans la réponse');
+      return [];
+    } catch (parseError) {
+      console.error('Erreur lors du parsing de la réponse JSON:', parseError);
+      console.error('Contenu de la réponse:', responseText);
+      // Retourner un tableau vide au lieu de planter l'application
       return [];
     }
-    
-    // Si c'est déjà un tableau, le retourner directement avec le typage correct
-    console.log('Contacts traités:', data);
-    return data as Contact[];
   } catch (error) {
     console.error('Erreur API:', error);
     if (error instanceof Error && error.message.includes('401')) {

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ToastProvider } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/use-toast";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/toast";
 import { ToastViewport } from "@/components/ui/toast";
 import { RemoveExtensionAttributes } from "@/components/ui/remove-extension-attributes";
 
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`} suppressHydrationWarning>
         <ToastProvider>
           {children}
+          <Toaster />
           <ToastViewport />
           <RemoveExtensionAttributes />
         </ToastProvider>

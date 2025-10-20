@@ -3,6 +3,8 @@
 import * as React from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { type VariantProps, cva } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+import { X } from 'lucide-react'; // Added import for X icon
 
 type ToastActionElement = React.ReactElement<typeof ToastPrimitives.Action>;
 
@@ -216,88 +218,86 @@ function useToast() {
 
 export { useToast, toast };
 
-export function Toaster() {
-  const { toasts } = useToast();
-  
-  const renderToast = (toast: any) => {
-    const variant = toast.variant || 'default';
-    const className = [
-      'group',
-      'pointer-events-auto',
-      'relative',
-      'flex',
-      'w-full',
-      'items-center',
-      'justify-between',
-      'space-x-4',
-      'overflow-hidden',
-      'rounded-md',
-      'border',
-      'p-6',
-      'pr-8',
-      'shadow-lg',
-      'transition-all',
-      variant === 'destructive' 
-        ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-900 dark:text-red-50' 
-        : 'bg-background text-foreground'
-    ].join(' ');
-    
+interface ToastProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> {
+  variant?: 'default' | 'destructive' | 'success';
+}
+
+const Toast = React.forwardRef<React.ElementRef<typeof ToastPrimitives.Root>, ToastProps>(
+  ({ className, variant, ...props }, ref) => {
     return React.createElement(
       ToastPrimitives.Root,
       {
-        ...toast,
-        className
-      },
-      [
-        React.createElement(
-          'div',
-          { key: 'content', className: 'grid gap-1' },
-          [
-            toast.title && React.createElement(
-              ToastPrimitives.Title,
-              { 
-                key: 'title',
-                className: 'text-sm font-semibold' 
-              },
-              toast.title
-            ),
-            toast.description && React.createElement(
-              ToastPrimitives.Description,
-              { 
-                key: 'description',
-                className: 'text-sm opacity-90' 
-              },
-              toast.description
-            )
-          ].filter(Boolean)
+        ref,
+        className: cn(
+          'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all',
+          variant === 'destructive'
+            ? 'border-red-500 bg-red-50 text-red-900'
+            : variant === 'success'
+            ? 'border-green-500 bg-green-50 text-green-900'
+            : 'border-gray-200 bg-white text-foreground',
+          className
         ),
-        toast.action,
-        React.createElement(
-          ToastPrimitives.Close,
-          { 
-            key: 'close',
-            className: 'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600'
-          },
-          [
-            React.createElement('span', { 
-              key: 'sr',
-              className: 'sr-only' 
-            }, 'Fermer'),
-            React.createElement('span', { 
-              key: 'icon',
-              className: 'h-4 w-4' 
-            }, '×')
-          ]
-        )
-      ].filter(Boolean)
+        ...props
+      }
     );
-  };
+  }
+);
+Toast.displayName = ToastPrimitives.Root.displayName;
 
+export function Toaster() {
+  const { toasts } = useToast();
+  
   return React.createElement(
     ToastPrimitives.Provider,
     {},
     [
-      ...toasts.map(renderToast),
+      ...toasts.map(({ id, title, description, action, ...props }) => {
+        const children = [
+          React.createElement(
+            'div',
+            { 
+              key: 'content',
+              className: 'grid flex-1 gap-1' 
+            },
+            [
+              title && React.createElement(
+                ToastPrimitives.Title,
+                { 
+                  key: 'title',
+                  className: 'text-sm font-semibold' 
+                },
+                title
+              ),
+              description && React.createElement(
+                ToastPrimitives.Description,
+                { 
+                  key: 'description',
+                  className: 'text-sm opacity-90' 
+                },
+                description
+              )
+            ].filter(Boolean)
+          ),
+          action,
+          React.createElement(
+            ToastPrimitives.Close,
+            {
+              key: 'close',
+              className: 'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600'
+            },
+            React.createElement(X, { className: 'h-4 w-4' })
+          )
+        ].filter(Boolean);
+
+        return React.createElement(
+          Toast,
+          {
+            key: id,
+            ...props
+          },
+          children
+        );
+      }),
       React.createElement(
         ToastPrimitives.Viewport,
         {

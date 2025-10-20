@@ -56,11 +56,14 @@ export default function HistoriquePage() {
     }
   };
 
-  // Appliquer les filtres et la pagination
+  // Appliquer les filtres, le tri par date et la pagination
   const applyFilters = (messages: Message[]) => {
-    // Filtrer par recherche
-    let filtered = [...messages];
+    // Trier les messages par date (du plus récent au plus ancien)
+    let filtered = [...messages].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
     
+    // Filtrer par recherche
     if (searchQuery.trim()) {
       const searchLower = searchQuery.trim().toLowerCase();
       filtered = filtered.filter(message => {
@@ -144,20 +147,32 @@ export default function HistoriquePage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Historique des messages</h1>
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            placeholder="Rechercher..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64"
-          />
-          <Button type="submit" variant="outline">
-            <Search className="h-4 w-4 mr-2" />
-            Rechercher
-          </Button>
-        </form>
+      <div className="space-y-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Historique des messages</h1>
+          <div className="text-sm text-muted-foreground">
+            {totalItems} message{totalItems !== 1 ? 's' : ''} au total
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
+            <Input
+              placeholder="Rechercher un message..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full sm:w-64"
+            />
+            <Button type="submit" variant="outline">
+              <Search className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Rechercher</span>
+            </Button>
+          </form>
+          
+          <div className="text-sm text-muted-foreground self-end sm:self-center">
+            Affichage des messages les plus récents
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="unides" onValueChange={(value) => {
