@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Liste des chemins publics accessibles sans authentification
-const publicPaths = ['/login', '/forgot-password', '/_next', '/favicon.ico'];
+const publicPaths = [
+  '/login', 
+  '/forgot-password',
+  '/reset-password',  // Ajout de la page de réinitialisation
+  '/_next', 
+  '/favicon.ico',
+  '/Documentation API SMS Gateway.pdf'  // Chemin exact du fichier PDF
+];
 
 // Fonction pour vérifier si le chemin est public
 const isPublicPath = (pathname: string) => {
@@ -74,6 +81,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|pdf)$).*)',
   ],
 };

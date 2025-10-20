@@ -3,6 +3,7 @@
 import { Menu, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 
@@ -37,19 +38,18 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         <div className="flex items-center space-x-4">
           <Button 
             variant="ghost" 
-            size="icon" 
-            onClick={() => {
-              // Créer un lien de téléchargement pour la documentation
-              const link = document.createElement('a');
-              link.href = '/Documentation-SMS-Gateway.pdf';
-              link.download = 'Documentation_SMS_Gateway.pdf';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            size="icon"
+            asChild
             title="Télécharger la documentation"
           >
-            <Download className="h-5 w-5" />
+            <a 
+              href="/Documentation API SMS Gateway.pdf" 
+              download="Documentation_API_SMS_Gateway.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="h-5 w-5" />
+            </a>
           </Button>
           
           <div className="flex items-center space-x-4">

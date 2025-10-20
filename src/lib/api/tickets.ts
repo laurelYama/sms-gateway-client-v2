@@ -1,4 +1,4 @@
-import Cookies from 'js-cookie';
+import { getTokenFromCookies } from '../auth';
 
 export interface Ticket {
   id: string;
@@ -19,8 +19,38 @@ export interface CreateTicketData {
   emailClient: string;
 }
 
+export async function fetchLastClosedTicket(clientId: string): Promise<Ticket | null> {
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.warn('Aucun token d\'authentification trouvé');
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `https://api-smsgateway.solutech-one.com/api/V1/tickets/client/${clientId}?statut=FERME&sort=updatedAt:desc&limit=1`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération du dernier ticket fermé');
+    }
+
+    const tickets = await response.json();
+    return tickets.length > 0 ? tickets[0] : null;
+  } catch (error) {
+    console.error('Erreur lors de la récupération du dernier ticket fermé:', error);
+    throw error;
+  }
+}
+
 export async function fetchTickets(clientId: string): Promise<Ticket[]> {
-  const token = Cookies.get('authToken');
+  const token = getTokenFromCookies();
   
   if (!token) {
     throw new Error('Aucun token d\'authentification trouvé');

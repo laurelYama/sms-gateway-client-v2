@@ -24,6 +24,7 @@ interface CreditRequest {
   clientId: string;
   quantity: number;
   status: string;
+  rejectReason: string | null;
   createdAt: string;
   validatedAt: string | null;
   pricePerSmsTtc: number | null;
@@ -419,7 +420,7 @@ export default function CommandesPage() {
                         </div>
                       </div>
                       <div className="mt-2 flex justify-between items-center">
-                        <div>
+                        <div className="flex flex-col gap-1">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             item.status === 'PENDING' 
                               ? 'bg-yellow-100 text-yellow-800' 
@@ -433,6 +434,11 @@ export default function CommandesPage() {
                               ? 'Approuvé'
                               : 'Rejeté'}
                           </span>
+                          {item.status === 'REJECTED' && item.rejectReason && (
+                            <div className="text-xs text-red-600 mt-1">
+                              <span className="font-medium">Raison :</span> {item.rejectReason}
+                            </div>
+                          )}
                         </div>
                         {item.validatedAt && (
                           <div className="text-xs text-muted-foreground">

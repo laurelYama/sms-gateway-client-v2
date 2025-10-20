@@ -76,13 +76,15 @@ export const getCalendrierFacturation = async (annee: number): Promise<Calendrie
     console.log('Réponse brute:', responseText);
     
     if (!response.ok) {
-      console.error('Erreur de l\'API - Détails:', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        headers: Object.fromEntries(response.headers.entries()),
-        body: responseText || 'Aucun corps de réponse'
-      });
+      // Ne pas logger les erreurs 404 pour les années non trouvées (cas normal)
+      if (response.status !== 404 && response.status !== 409) {
+        console.error('Erreur de l\'API - Détails:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          body: responseText || 'Aucun corps de réponse'
+        });
+      }
       
       let errorMessage = 'Erreur lors de la récupération du calendrier de facturation';
       let errorCode = 'UNKNOWN_ERROR';
@@ -100,7 +102,7 @@ export const getCalendrierFacturation = async (annee: number): Promise<Calendrie
         errorMessage = `L'année fiscale ${annee} n'est pas encore disponible ou n'est pas ouverte.`;
         errorCode = 'YEAR_NOT_OPEN';
       } else if (response.status >= 500) {
-        errorMessage = `Erreur serveur (${response.status}). Veuillez réessayer plus tard.`;
+        errorMessage = `Erreur serveur. Veuillez réessayer plus tard.`;
         errorCode = 'SERVER_ERROR';
       }
       
