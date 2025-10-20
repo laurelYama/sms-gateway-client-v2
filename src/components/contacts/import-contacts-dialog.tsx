@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Upload, FileText, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
-import { importContactsCSV, importContactsXLSX, fetchContacts } from '@/lib/api/contacts';
+import { importContactsCSV, importContactsXLSX } from '@/lib/api/contacts';
+import { getGroupes } from '@/lib/api/groupes';
+import { getClientId } from '@/lib/utils/clientUtils';
 
 interface ImportContactsDialogProps {
   open: boolean;
@@ -36,22 +38,17 @@ export function ImportContactsDialog({
   useEffect(() => {
     const loadGroups = async () => {
       try {
-        const contacts = await fetchContacts({});
-        // Extraire les groupes uniques des contacts
-        const uniqueGroups = Array.from(
-          new Map(
-            contacts
-              .filter(contact => contact.clientsGroup?.idClientsGroups)
-              .map(contact => [
-                contact.clientsGroup!.idClientsGroups,
-                {
-                  id: contact.clientsGroup!.idClientsGroups,
-                  name: contact.clientsGroup!.nomGroupe || 'Sans nom'
-                }
-              ])
-          ).values()
-        );
-        setGroups(uniqueGroups);
+        const clientId = getClientId();
+        if (!clientId) {
+          console.error('ClientId non trouvé lors du chargement des groupes');
+          toast.error('Impossible de récupérer les groupes: client non identifié');
+          return;
+        }
+
+        const groupes = await getGroupes(clientId);
+        const mapped = groupes.map(g => ({ id: g.idClientsGroups, name: g.nomGroupe || 'Sans nom' }));
+        setGroups(mapped);
+        if (mapped.length > 0) setSelectedGroupId(mapped[0].id);
       } catch (error) {
         console.error('Erreur lors du chargement des groupes:', error);
         toast.error('Erreur lors du chargement des groupes');

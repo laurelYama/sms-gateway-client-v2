@@ -1,5 +1,6 @@
 import { getClientId } from '@/lib/utils/clientUtils';
 import Cookies from 'js-cookie';
+import { API_ENDPOINTS } from '@/config/api';
 
 export interface ApiKeyData {
   clientId: string;
@@ -52,7 +53,7 @@ export async function regenerateApiKey(): Promise<ApiKeyData> {
 
     console.log('Tentative de régénération de la clé API...');
     
-    const url = API_ENDPOINTS.REGENERATE_API_KEY(clientId);
+  const url = API_ENDPOINTS.CLIENTS.REGENERATE_API_KEY(clientId);
     console.log('URL de la requête:', url);
     
     const response = await fetch(url, {

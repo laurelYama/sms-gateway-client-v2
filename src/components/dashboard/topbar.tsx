@@ -42,9 +42,8 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             asChild
             title="Télécharger la documentation"
           >
-            <a 
-              href="/Documentation API SMS Gateway.pdf" 
-              download="Documentation_API_SMS_Gateway.pdf"
+            <a
+              href="https://api-smsgateway.solutech-one.com/api/V1/documents/download/f58a58af-be16-42f7-992e-88ac18f8757a_Documentation_SMS_Gateway.pdf"
               target="_blank"
               rel="noopener noreferrer"
             >

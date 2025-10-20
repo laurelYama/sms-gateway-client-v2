@@ -1,5 +1,6 @@
 import Cookies from 'js-cookie';
 import { getClientId } from '@/lib/utils/clientUtils';
+import { API_ENDPOINTS } from '@/config/api';
 
 export interface Emetteur {
   id: string;
@@ -268,7 +269,9 @@ export async function deleteEmetteur(emetteurId: string): Promise<{ message: str
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.EMETTEURS}/${emetteurId}`, {
+    const url = `${API_ENDPOINTS.EMETTEURS.BASE}/${clientId}/${emetteurId}`;
+    console.log('[DEBUG] URL de la requête deleteEmetteur:', url);
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`

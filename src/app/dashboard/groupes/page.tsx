@@ -15,6 +15,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog';
 import { getGroupes, deleteGroupe, Groupe } from '@/lib/api/groupes';
 import { GroupeForm } from '@/components/groupes/groupe-form';
 import { getUserFromCookies } from '@/lib/auth';
@@ -29,6 +37,8 @@ export default function GroupesPage() {
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingGroupe, setEditingGroupe] = useState<Groupe | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [groupeToDelete, setGroupeToDelete] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
@@ -124,10 +134,7 @@ export default function GroupesPage() {
         return;
       }
       
-      console.log('[DEBUG] Groupes avec compteur:', groupesAvecCompteur);
-      setGroupes(groupesAvecCompteur);
-      setFilteredGroupes(groupesAvecCompteur);
-      
+  // Note: counters already set in the inner try/catch above.
     } catch (error) {
       console.error('[ERROR] Erreur lors du chargement des groupes:', error);
       
@@ -183,14 +190,12 @@ export default function GroupesPage() {
     }
   }, [filteredGroupes, page, pageSize]);
   
-  const [currentItems, setCurrentItems] = useState<Groupe[]>([]);
+  const [currentItems, setCurrentItems] = useState<Array<Groupe & { contactCount?: number }>>([]);
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   const paginate = (pageNumber: number) => setPage(pageNumber);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')) return;
-    
     try {
       await deleteGroupe(id);
       setGroupes(groupes.filter(groupe => groupe.idClientsGroups !== id));
@@ -338,7 +343,10 @@ export default function GroupesPage() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600"
-                              onClick={() => handleDelete(groupe.idClientsGroups)}
+                              onClick={() => {
+                                setGroupeToDelete(groupe.idClientsGroups);
+                                setDeleteDialogOpen(true);
+                              }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               <span>Supprimer</span>
@@ -350,6 +358,33 @@ export default function GroupesPage() {
                   ))}
                 </TableBody>
               </Table>
+              {/* Confirm delete dialog */}
+              <AlertDialog open={deleteDialogOpen} onOpenChange={(open: boolean) => {
+                if (!open) setGroupeToDelete(null);
+                setDeleteDialogOpen(open);
+              }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Supprimer le groupe</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible. Êtes-vous sûr de vouloir supprimer ce groupe ?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Annuler</Button>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!groupeToDelete) return;
+                        await handleDelete(groupeToDelete);
+                        setDeleteDialogOpen(false);
+                      }}
+                    >
+                      Supprimer
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               {/* Pagination */}
               {totalItems > 0 && (
                 <div className="flex items-center justify-between px-2 py-4">

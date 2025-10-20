@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { ApiKeyData } from '@/lib/api/apiKeys';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { fetchApiKey, regenerateApiKey } from '@/lib/api/apiKeys';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function ApiKeysPage() {
-  const [apiKeyData, setApiKeyData] = useState<{ clientId: string; apiKey: string } | null>(null);
+  const [apiKeyData, setApiKeyData] = useState<ApiKeyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -71,16 +72,22 @@ export default function ApiKeysPage() {
 
   const copyToClipboard = () => {
     if (!apiKeyData?.apiKey) return;
-    
-    navigator.clipboard.writeText(apiKeyData.apiKey);
-    setCopied(true);
-    
-    toast({
-      title: 'Copié !',
-      description: 'La clé API a été copiée dans le presse-papier',
-    });
-    
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      navigator.clipboard.writeText(apiKeyData.apiKey);
+      setCopied(true);
+      toast({
+        title: 'Copié !',
+        description: 'La clé API a été copiée dans le presse-papier',
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Erreur lors de la copie dans le presse-papier:', err);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de copier la clé dans le presse-papier. Veuillez copier manuellement.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -195,9 +202,10 @@ export default function ApiKeysPage() {
             </pre>
             <div className="mt-4 space-y-2">
               <p>Consultez la documentation complète de l'API pour plus d'informations sur les points de terminaison disponibles.</p>
-              <a 
-                href="/Documentation SMS Gateway.pdf" 
-                download="Documentation API SMS Gateway.pdf"
+              <a
+                href="https://api-smsgateway.solutech-one.com/api/V1/documents/download/f58a58af-be16-42f7-992e-88ac18f8757a_Documentation_SMS_Gateway.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center text-sm font-medium text-primary hover:underline"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

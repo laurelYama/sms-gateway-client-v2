@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { fetchContacts, createContact, updateContact, deleteContact, moveContact, importContactsFromCSV, type Contact } from '@/lib/api/contacts';
 import { toast } from 'sonner';
+import { DeleteContactDialog } from '@/components/contacts/delete-contact-dialog';
 
 export default function GroupeDetailPage() {
   const params = useParams<{ id: string }>();
@@ -20,6 +21,8 @@ export default function GroupeDetailPage() {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!params.id) {
@@ -35,7 +38,13 @@ export default function GroupeDetailPage() {
       setLoading(true);
       const data = await fetchContacts({ groupId: params.id });
       console.log('Données des contacts reçues:', data);
-      setContacts(data);
+      // fetchContacts may return a number on error in some wrappers; guard it here
+      if (Array.isArray(data)) {
+        setContacts(data);
+      } else {
+        setContacts([]);
+        console.warn('fetchContacts returned non-array:', data);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des contacts:', error);
       toast.error('Erreur lors du chargement des contacts');
@@ -68,8 +77,6 @@ export default function GroupeDetailPage() {
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce contact ?')) return;
-    
     try {
       await deleteContact(contactId);
       await loadContacts();
@@ -109,6 +116,7 @@ export default function GroupeDetailPage() {
   }
 
   return (
+    <>
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestion du groupe</h1>
@@ -184,11 +192,11 @@ export default function GroupeDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contacts.length > 0 ? (
-                  contacts.map((contact) => (
-                    <TableRow key={contact.id}>
-                      <TableCell>{contact.contactName}</TableCell>
-                      <TableCell>{contact.contactNumber}</TableCell>
+                  {contacts.length > 0 ? (
+                  contacts.map((contact, _idx) => (
+                    <TableRow key={(contact as any).id ?? _idx}>
+                      <TableCell>{(contact as any).contactName}</TableCell>
+                      <TableCell>{(contact as any).contactNumber}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -205,13 +213,20 @@ export default function GroupeDetailPage() {
                               <Move className="mr-2 h-4 w-4" />
                               <span>Déplacer</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => contact.id && handleDeleteContact(contact.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Supprimer</span>
-                            </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="text-red-600"
+                                    onClick={() => {
+                                        const cid = (contact as any).id;
+                                        const cname = (contact as any).contactName;
+                                        if (cid) {
+                                          setContactToDelete({ id: cid, name: cname });
+                                          setDeleteDialogOpen(true);
+                                        }
+                                      }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Supprimer</span>
+                                  </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -230,5 +245,15 @@ export default function GroupeDetailPage() {
         </div>
       </div>
     </div>
+    <DeleteContactDialog
+      open={deleteDialogOpen}
+      onOpenChange={(open) => setDeleteDialogOpen(open)}
+      contactId={contactToDelete?.id || ''}
+      contactName={contactToDelete?.name || ''}
+      onConfirm={async (id) => {
+        await handleDeleteContact(id);
+      }}
+    />
+    </>
   );
 }
