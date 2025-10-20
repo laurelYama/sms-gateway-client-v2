@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
 import { BottomNav } from '@/components/dashboard/bottom-nav';
@@ -15,8 +15,9 @@ export default function DashboardLayout({
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <ProtectedRoute>
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
         {/* Sidebar - visible uniquement sur desktop */}
         {!isMobile && (
           <div className="w-64 bg-white border-r border-gray-200">
@@ -41,7 +42,8 @@ export default function DashboardLayout({
             </div>
           )}
         </div>
-      </div>
-    </ProtectedRoute>
+        </div>
+      </ProtectedRoute>
+    </Suspense>
   );
 }

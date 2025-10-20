@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
 
@@ -49,7 +51,8 @@ export default function TestPdfPage() {
                 window.URL.revokeObjectURL(url);
               } catch (error) {
                 console.error('Erreur:', error);
-                alert(`Erreur lors du téléchargement: ${error.message}`);
+                const message = error instanceof Error ? error.message : String(error);
+                alert(`Erreur lors du téléchargement: ${message}`);
               }
             }}
           >
