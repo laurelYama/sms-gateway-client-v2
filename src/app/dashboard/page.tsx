@@ -34,10 +34,14 @@ import {
   SmsStats
 } from "@/lib/api/sms";
 
+// Intervalle de rafraîchissement en millisecondes (5 minutes)
+const REFRESH_INTERVAL = 5 * 60 * 1000;
+
 export default function DashboardPage() {
   const router = useRouter();
 
   // États
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [smsCount, setSmsCount] = useState<number | null>(null);
   const [loadingSms, setLoadingSms] = useState<boolean>(false);
   const [groupCount, setGroupCount] = useState<number | null>(null);
@@ -87,19 +91,16 @@ export default function DashboardPage() {
   };
 
   // Récupération des données du tableau de bord
-  useEffect(() => {
-    fetchLastTicket(); // Charger le dernier ticket fermé
-    
-    const fetchDashboardData = async () => {
-      setLoadingSms(true);
-      try {
-        // Récupérer les données en parallèle
-        const [smsCountData, groupsData, contactsData, soldeNetData] = await Promise.allSettled([
-          getSmsCountThisMonth(),
-          getClientGroups(),
-          getClientContacts(),
-          getClientSoldeNet()
-        ]);
+  const fetchDashboardData = async () => {
+    setLoadingSms(true);
+    try {
+      // Récupérer les données en parallèle
+      const [smsCountData, groupsData, contactsData, soldeNetData] = await Promise.allSettled([
+        getSmsCountThisMonth(),
+        getClientGroups(),
+        getClientContacts(),
+        getClientSoldeNet()
+      ]);
 
         // Traiter le résultat des SMS
         if (smsCountData.status === 'fulfilled') {
@@ -144,8 +145,27 @@ export default function DashboardPage() {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    // Effet pour charger les données initiales et configurer le rafraîchissement automatique
+  useEffect(() => {
+    // Fonction de rafraîchissement
+    const refreshData = async () => {
+      try {
+        await fetchDashboardData();
+        console.log('Données du tableau de bord rafraîchies silencieusement');
+      } catch (error) {
+        console.error('Erreur lors du rafraîchissement des données:', error);
+      }
+    };
+
+    // Chargement initial
+    refreshData();
+    
+    // Configuration du rafraîchissement automatique toutes les 5 minutes
+    const refreshInterval = setInterval(refreshData, 5 * 60 * 1000);
+    
+    // Nettoyage de l'intervalle lors du démontage du composant
+    return () => clearInterval(refreshInterval);
+  }, [period]);
 
   // Charger et traiter les statistiques SMS
   const loadSmsStats = useCallback(async (period: "today" | "7d" | "month") => {
