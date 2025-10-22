@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import { forgotPassword } from "@/lib/api/auth";
 import Link from 'next/link';
 import Image from 'next/image';
-import { Toaster } from "@/components/ui/use-toast";
+import { Toaster } from "sonner";
 import { MessageCircle } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
@@ -58,14 +58,37 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <>
-      <Toaster />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Toaster position="top-center" />
       <div className="h-screen w-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-[#0171BB] md:to-[#8DC73C] p-0 m-0 overflow-hidden">
         <div className="w-full h-full bg-white flex flex-col md:flex-row">
           {/* Section gauche - Branding - Cachée sur mobile */}
           <div className="hidden md:flex bg-[#0072BB] text-white p-8 flex-col justify-center items-center text-center md:w-1/2 h-full">
             <div className="bg-white/20 p-6 rounded-2xl mb-8">
               <MessageCircle className="w-16 h-16 text-white" />
+              <h1 className="text-3xl font-bold mb-4">Réinitialisation du mot de passe</h1>
+              <p className="text-blue-100 mb-8">Entrez votre adresse email pour recevoir un lien de réinitialisation</p>
+              
+              <div className="space-y-4 w-full max-w-xs">
+                <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                  </div>
+                  <span className="text-sm">Lien de réinitialisation par email</span>
+                </div>
+                
+                <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm">Sécurité renforcée</span>
+                </div>
+              </div>
             </div>
             <h1 className="text-3xl font-bold mb-4">Réinitialisation du mot de passe</h1>
             <p className="text-blue-100 mb-8">Entrez votre adresse email pour recevoir un lien de réinitialisation</p>
@@ -158,6 +181,6 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

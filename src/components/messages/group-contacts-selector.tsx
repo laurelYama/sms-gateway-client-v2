@@ -148,71 +148,10 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
     }
   };
 
-  // Sélectionner ou désélectionner tous les contacts visibles
-  const selectAllVisibleContacts = () => {
-    // Si tout est déjà sélectionné, on désélectionne tout
-    if (allVisibleSelected) {
-      const visibleContactNumbers = new Set<string>();
-      
-      // Récupérer tous les numéros de contacts visibles
-      filteredGroups.forEach(group => {
-        const groupContactsList = groupContacts[group.idClientsGroups] || [];
-        groupContactsList.forEach(contact => {
-          visibleContactNumbers.add(contact.contactNumber);
-        });
-      });
-      
-      // Filtrer pour ne garder que les contacts non visibles
-      const newSelections = selectedContacts.filter(contact => {
-        const number = typeof contact === 'string' ? contact : contact.number;
-        return !visibleContactNumbers.has(number);
-      });
-      
-      onSelectContacts(newSelections);
-    } else {
-      // Sinon, on ajoute tous les contacts visibles
-      const newSelections = [...selectedContacts];
-      
-      filteredGroups.forEach(group => {
-        const groupContactsList = groupContacts[group.idClientsGroups] || [];
-        groupContactsList.forEach(contact => {
-          const exists = newSelections.some(selected => 
-            typeof selected === 'string'
-              ? selected === contact.contactNumber
-              : selected.number === contact.contactNumber
-          );
-          
-          if (!exists) {
-            newSelections.push({
-              number: contact.contactNumber,
-              countryCode: '',
-              fullNumber: contact.contactNumber,
-              contactName: contact.contactName || ''
-            });
-          }
-        });
-      });
-      
-      onSelectContacts(newSelections);
-    }
-  };
-
   // Filtrer les groupes en fonction de la recherche
   const filteredGroups = groups.filter(group => 
     group.nomGroupe.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  // Vérifier si tous les contacts visibles sont sélectionnés
-  const allVisibleSelected = filteredGroups.length > 0 && filteredGroups.every(group => {
-    const groupContactsList = groupContacts[group.idClientsGroups] || [];
-    return groupContactsList.length > 0 && groupContactsList.every(contact => 
-      selectedContacts.some(selected =>
-        typeof selected === 'string'
-          ? selected === contact.contactNumber
-          : selected.number === contact.contactNumber
-      )
-    );
-  });
 
   // Gérer le changement de recherche
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,17 +183,6 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-medium">Sélectionner un groupe</h3>
-            {filteredGroups.length > 0 && (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm"
-                onClick={selectAllVisibleContacts}
-                className="h-7 px-2 text-xs"
-              >
-                {allVisibleSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
-              </Button>
-            )}
           </div>
           <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
