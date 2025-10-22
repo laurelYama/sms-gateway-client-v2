@@ -50,7 +50,11 @@ export interface SmsMuldes {
   type: string;
   statut: string;
   createdAt: string;
-  Destinataires: string[];
+  destinataires: string[];
+  dateDebutEnvoi?: string;
+  dateFinEnvoi?: string;
+  nbParJour?: number;
+  intervalleMinutes?: number;
 }
 
 export type SmsStats = SmsUnides | SmsMuldes;
@@ -545,23 +549,11 @@ export const fetchMessages = async (
   if (!user || !user.id) throw new Error('Utilisateur non connecté');
   
   // Construire l'URL en fonction du type de message
-  let url: string;
-  
-  switch (type) {
-    case 'unides':
-      url = `${API_BASE_URL}/api/V1/sms/unides/${user.id}`;
-      break;
-    case 'muldes':
-      url = `${API_BASE_URL}/api/V1/sms/muldes/${user.id}`;
-      break;
-    case 'muldesp':
-      url = `${API_BASE_URL}/api/V1/sms/muldesp/${user.id}`;
-      break;
-    default:
-      throw new Error(`Type de message non supporté: ${type}`);
-  }
-  
-  const response = await fetch(url, {
+  const endpoint = type === 'muldesp' 
+    ? `${API_BASE_URL}/api/V1/sms/client/${user.id}/muldesp/filter`
+    : `${API_BASE_URL}/api/V1/sms/client/${user.id}/${type}?page=${page}&pageSize=${pageSize}`;
+
+  const response = await fetch(endpoint, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -569,20 +561,46 @@ export const fetchMessages = async (
   });
 
   if (!response.ok) {
-    throw new Error('Erreur lors de la récupération des messages');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to fetch ${type} messages`
+    );
   }
 
   const data = await response.json();
   
-  // Implémentation de la pagination côté client
-  const startIndex = (page - 1) * pageSize;
-  const paginatedData = data.slice(startIndex, startIndex + pageSize);
+  // Pour les messages programmés (MULDESP), on formate la réponse
+  if (type === 'muldesp') {
+    // Appliquer la pagination côté client pour les messages programmés
+    const startIndex = (page - 1) * pageSize;
+    const paginatedData = data.slice(startIndex, startIndex + pageSize);
+    
+    return {
+      data: paginatedData || [],
+      total: data?.length || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((data?.length || 0) / pageSize)
+    };
+  }
   
+  // Si c'est une réponse paginée
+  if (data.data && Array.isArray(data.data)) {
+    return {
+      data: data.data,
+      total: data.total || data.data.length,
+      page: data.page || page,
+      pageSize: data.pageSize || pageSize,
+      totalPages: data.totalPages || Math.ceil((data.total || data.data.length) / pageSize)
+    };
+  }
+  
+  // Si c'est un simple tableau
   return {
-    data: paginatedData,
-    total: data.length,
+    data: Array.isArray(data) ? data : [],
+    total: Array.isArray(data) ? data.length : 0,
     page,
     pageSize,
-    totalPages: Math.ceil(data.length / pageSize),
+    totalPages: Math.ceil((Array.isArray(data) ? data.length : 0) / pageSize)
   };
 };

@@ -50,11 +50,17 @@ interface Message {
   ref: string;
   type: string;
   destinataire?: string;
+  destinataires?: string[];
   Destinataires?: string[];
   corps: string;
   emetteur: string;
   statut: string;
   createdAt: string;
+  dateDebutEnvoi?: string;
+  dateFinEnvoi?: string;
+  nbParJour?: number;
+  intervalleMinutes?: number;
+  clientId?: string;
 }
 
 export default function HistoriquePage() {
@@ -189,23 +195,48 @@ export default function HistoriquePage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Désactiver temporairement la pagination côté client en récupérant toutes les données
-      const data = await fetchMessages(activeTab, 1, 1000); // Augmenté la limite pour récupérer plus de données
-      console.log('Données reçues de l\'API:', data.data); // Log pour déboguer
+      setError('');
       
-      // Vérifier la structure des données
-      if (data.data && data.data.length > 0) {
-        console.log('Premier message:', data.data[0]);
-        console.log('Clés du premier message:', Object.keys(data.data[0]));
+      console.log(`Chargement des messages de type: ${activeTab}`);
+      
+      // Récupérer les données depuis l'API
+      const data = await fetchMessages(activeTab, 1, 1000);
+      console.log('Données reçues de l\'API:', data);
+      
+      // Vérifier si les données sont valides
+      if (!data || !Array.isArray(data.data)) {
+        console.error('Format de données invalide:', data);
+        setError('Format de données invalide reçu du serveur');
+        setAllMessages([]);
+        return;
       }
       
-      setAllMessages(data.data);
-      setError('');
-      // Appliquer les filtres initiaux
-      applyFilters(data.data);
+      // Mettre à jour les états avec les données
+      const messages = data.data || [];
+      setAllMessages(messages);
+      
+      if (messages.length > 0) {
+        console.log(`Reçu ${messages.length} messages`);
+        console.log('Exemple de message:', messages[0]);
+        
+        // Appliquer les filtres initiaux
+        applyFilters(messages);
+      } else {
+        console.log('Aucun message trouvé');
+        setFilteredMessages([]);
+        setDisplayedMessages([]);
+        setTotalItems(0);
+      }
     } catch (err) {
-      setError('Erreur lors du chargement des messages');
-      console.error('Erreur fetchData:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('Erreur fetchData:', errorMessage, err);
+      setError(`Erreur lors du chargement des messages: ${errorMessage}`);
+      
+      // Réinitialiser les états en cas d'erreur
+      setAllMessages([]);
+      setFilteredMessages([]);
+      setDisplayedMessages([]);
+      setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
@@ -213,57 +244,86 @@ export default function HistoriquePage() {
 
   // Appliquer les filtres, le tri par date et la pagination
   const applyFilters = (messages: Message[]) => {
+    console.log('applyFilters called with messages:', messages);
+    
+    if (!messages || messages.length === 0) {
+      setFilteredMessages([]);
+      setDisplayedMessages([]);
+      setTotalItems(0);
+      return;
+    }
+    
+    // Créer une copie des messages
+    let filtered = [...messages];
+    
     // Trier les messages par date (du plus récent au plus ancien)
-    let filtered = [...messages].sort((a, b) =>
+    filtered = filtered.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    // Filtrer par statut
+    // Filtrer par statut si un filtre est défini
     if (statusFilter) {
-      filtered = filtered.filter((message) => message.statut === statusFilter);
+      filtered = filtered.filter(message => message.statut === statusFilter);
     }
 
-    // Filtrer par recherche
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (message) =>
-          message.ref.toLowerCase().includes(query) ||
-          (message.corps && message.corps.toLowerCase().includes(query)) ||
-          (message.destinataire && message.destinataire.toLowerCase().includes(query)) ||
-          (message.Destinataires && message.Destinataires.some((d: string) => d.toLowerCase().includes(query)))
-      );
+    // Filtrer par recherche si une requête est définie
+    if (searchQuery) {
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(message => {
+        // Vérifier dans le corps du message
+        if (message.corps && message.corps.toLowerCase().includes(query)) return true;
+        
+        // Vérifier dans l'émetteur
+        if (message.emetteur && message.emetteur.toLowerCase().includes(query)) return true;
+        
+        // Vérifier dans le destinataire unique
+        if (message.destinataire && message.destinataire.toLowerCase().includes(query)) return true;
+        
+        // Vérifier dans les destinataires multiples (propriété destinataires)
+        if (message.destinataires && message.destinataires.some(d => 
+          d && d.toLowerCase().includes(query)
+        )) return true;
+        
+        // Vérifier dans les destinataires multiples (propriété Destinataires)
+        if (message.Destinataires && message.Destinataires.some(d => 
+          d && d.toLowerCase().includes(query)
+        )) return true;
+        
+        // Vérifier dans la référence
+        if (message.ref && message.ref.toLowerCase().includes(query)) return true;
+        
+        return false;
+      });
     }
 
-    setFilteredMessages(filtered);
+    console.log('Messages after filtering:', filtered);
+    
+    // Mettre à jour le nombre total d'éléments filtrés
     setTotalItems(filtered.length);
-
-    // Mettre à jour le nombre total de pages
-    const newTotalPages = Math.ceil(filtered.length / pageSize);
-
-    // Ajuster la page actuelle si nécessaire
-    const newPage = page > newTotalPages && newTotalPages > 0 ? newTotalPages : page;
-    if (newPage !== page) {
-      setPage(newPage);
-    }
-
+    
     // Appliquer la pagination
-    const startIndex = (newPage - 1) * pageSize;
-    const paginatedData = filtered.slice(startIndex, startIndex + pageSize);
-    setDisplayedMessages(paginatedData);
+    const startIndex = (page - 1) * pageSize;
+    const paginatedMessages = filtered.slice(startIndex, startIndex + pageSize);
+    
+    console.log('Paginated messages:', paginatedMessages);
+    
+    // Mettre à jour les états
+    setFilteredMessages(filtered);
+    setDisplayedMessages(paginatedMessages);
   };
 
-  // Mettre à jour les messages affichés quand les données, la recherche ou la page changent
+  // Mettre à jour les messages affichés quand les données, la recherche, le statut ou la page changent
   useEffect(() => {
     if (allMessages.length > 0) {
       applyFilters(allMessages);
     }
-  }, [allMessages, searchQuery, page]);
-
-  // Recharger les données quand l'onglet change
+  }, [allMessages, searchQuery, statusFilter, page, pageSize]);
+  
+  // Charger les données au montage du composant et quand l'onglet change
   useEffect(() => {
     setPage(1);
     setSearchQuery('');
+    setStatusFilter('');
     fetchData();
   }, [activeTab]);
 
@@ -443,11 +503,11 @@ export default function HistoriquePage() {
                         <TableHeader className="bg-muted/50 sticky top-0">
                           <TableRow className="hover:bg-transparent">
                             <TableHead className="font-semibold text-foreground">Référence</TableHead>
-                            <TableHead className="font-semibold text-foreground">Date</TableHead>
-                            <TableHead className="font-semibold text-foreground">Émetteur</TableHead>
-                            <TableHead className="font-semibold text-foreground">Destinataire(s)</TableHead>
                             <TableHead className="font-semibold text-foreground">Message</TableHead>
-                            <TableHead className="font-semibold text-foreground text-right">Statut</TableHead>
+                            <TableHead className="font-semibold text-foreground">Destinataire(s)</TableHead>
+                            <TableHead className="font-semibold text-foreground">Émetteur</TableHead>
+                            <TableHead className="font-semibold text-foreground">Statut</TableHead>
+                            <TableHead className="font-semibold text-foreground">Date</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -456,100 +516,125 @@ export default function HistoriquePage() {
                             displayedMessages.map((message) => (
                               <TableRow key={message.ref} className="group hover:bg-muted/50 transition-colors">
                                 <TableCell className="font-medium">
-                                  <div className="font-mono text-sm">{message.ref}</div>
+                                  <div className="flex items-center gap-2">
+                                    {message.type === 'MULDES' || message.type === 'MULDESP' ? (
+                                      <Users className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                    {message.ref}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="whitespace-normal">
+                                  <div className="space-y-1">
+                                    <div>{message.corps}</div>
+                                    {message.type === 'MULDESP' && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {message.dateDebutEnvoi && (
+                                          <div>Début: {format(new Date(message.dateDebutEnvoi), 'PP', { locale: fr })}</div>
+                                        )}
+                                        {message.dateFinEnvoi && (
+                                          <div>Fin: {format(new Date(message.dateFinEnvoi), 'PP', { locale: fr })}</div>
+                                        )}
+                                        {message.nbParJour && (
+                                          <div>{message.nbParJour} envoi(s) par jour</div>
+                                        )}
+                                        {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
+                                          <div>Intervalle: {message.intervalleMinutes} min</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {message.type === 'MULDES' || message.type === 'MULDESP' ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto p-0 text-left"
+                                      onClick={() => handleShowAllRecipients(message)}
+                                    >
+                                      {(message.destinataires || message.Destinataires || []).length} destinataires
+                                    </Button>
+                                  ) : (
+                                    message.destinataire
+                                  )}
+                                </TableCell>
+                                <TableCell>{message.emetteur}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    {message.statut === 'ENVOYE' && (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    )}
+                                    {message.statut === 'EN_ATTENTE' && (
+                                      <Clock className="h-4 w-4 text-yellow-500" />
+                                    )}
+                                    {message.statut === 'ERREUR' && (
+                                      <XCircle className="h-4 w-4 text-red-500" />
+                                    )}
+                                    {message.statut}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex flex-col">
-                                    <span className="text-sm font-medium">
-                                      {format(new Date(message.createdAt), 'dd MMM yyyy', { locale: fr })}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {format(new Date(message.createdAt), 'HH:mm', { locale: fr })}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm">{message.emetteur}</div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm">
-                                    {(message.destinataire || 
-                                     (message.destinataires && message.destinataires.length > 0) ||
-                                     (message.Destinataires && message.Destinataires.length > 0) ||
-                                     (message.recipients && message.recipients.length > 0)) ? (
-                                      <>
-                                        {message.destinataires ? 
-                                          message.destinataires[0] : 
-                                          (message.Destinataires ? 
-                                            message.Destinataires[0] : 
-                                            (message.recipients ?
-                                              message.recipients[0] :
-                                              message.destinataire
-                                            )
-                                          )
-                                        }
-                                        {((message.destinataires?.length > 1) || 
-                                          (message.Destinataires?.length > 1 && !message.destinataires) ||
-                                          (message.recipients?.length > 1 && !message.destinataires && !message.Destinataires)) && (
-                                          <TooltipProvider>
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <span className="text-muted-foreground cursor-help">
-                                                  {' '}+{message.destinataires?.length - 1 || message.Destinataires?.length - 1 || message.recipients?.length - 1} autres
-                                                </span>
-                                              </TooltipTrigger>
-                                              <TooltipContent className="max-w-xs">
-                                                <div className="space-y-1">
-                                                  <p className="font-medium">Tous les destinataires :</p>
-                                                  <ul className="list-disc pl-4 space-y-1">
-                                                    {(message.destinataires || message.Destinataires || message.recipients || []).map((recipient: string, index: number) => (
-                                                      <li key={index} className="text-sm">{recipient}</li>
-                                                    ))}
-                                                  </ul>
-                                                  <p className="text-xs text-muted-foreground italic mt-1">Cliquez sur l'icône d'information pour voir les détails complets</p>
-                                                </div>
-                                              </TooltipContent>
-                                            </Tooltip>
-                                          </TooltipProvider>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <span className="text-muted-foreground italic">Aucun destinataire</span>
+                                    <span>{format(new Date(message.createdAt), 'PPpp', { locale: fr })}</span>
+                                    {message.type === 'MULDESP' && message.updatedAt && (
+                                      <span className="text-xs text-muted-foreground">
+                                        Modifié: {format(new Date(message.updatedAt), 'PPpp', { locale: fr })}
+                                      </span>
                                     )}
                                   </div>
-                                </TableCell>
-                                <TableCell className="max-w-xs">
-                                  <div className="text-sm line-clamp-2">{message.corps}</div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  {getStatusBadge(message.statut)}
-                                </TableCell>
-                                <TableCell className="w-[100px] space-x-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleShowAllRecipients(message)}
-                                    className="h-8 w-8 p-0"
-                                    title="Voir les destinataires"
-                                  >
-                                    <Info className="h-4 w-4" />
-                                    <span className="sr-only">Détails</span>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteClick(message.ref)}
-                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
-                                    title="Supprimer le message"
-                                    disabled={isDeleting}
-                                  >
-                                    {isDeleting ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-4 w-4" />
-                                    )}
-                                    <span className="sr-only">Supprimer</span>
-                                  </Button>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <Info className="h-4 w-4" />
+                                          <span className="sr-only">Détails</span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs">
+                                        <div className="space-y-2">
+                                          <p className="font-medium">Détails du message</p>
+                                          <div className="space-y-1">
+                                            <p><span className="font-medium">Référence :</span> {message.ref}</p>
+                                            <p><span className="font-medium">Type :</span> {message.type}</p>
+                                            <p><span className="font-medium">Statut :</span> {message.statut}</p>
+                                            {message.type === 'MULDESP' && (
+                                              <div className="space-y-1 mt-2">
+                                                <p className="font-medium">Programmation :</p>
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                  {message.dateDebutEnvoi && (
+                                                    <li>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</li>
+                                                  )}
+                                                  {message.dateFinEnvoi && (
+                                                    <li>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</li>
+                                                  )}
+                                                  {message.nbParJour && (
+                                                    <li>{message.nbParJour} envoi(s) par jour</li>
+                                                  )}
+                                                  {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
+                                                    <li>Intervalle: {message.intervalleMinutes} min</li>
+                                                  )}
+                                                </ul>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="mt-2">
+                                            <p className="font-medium">Destinataires :</p>
+                                            <ul className="max-h-40 overflow-y-auto mt-1 border rounded-md p-2 space-y-1">
+                                              {(message.destinataires || message.Destinataires || message.recipients || []).map((recipient: string, index: number) => (
+                                                <li key={index} className="text-sm py-1 border-b last:border-0 last:pb-0 first:pt-0">
+                                                  {recipient}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </TableCell>
                               </TableRow>
                             ))
