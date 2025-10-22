@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { AlertCircle, Send, Calendar, Clock, RefreshCw, User, MessageSquare, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import GroupContactsSelector from '@/components/messages/group-contacts-selector';
@@ -26,7 +26,6 @@ export default function ScheduledMessagePage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [isGroupSelectorOpen, setIsGroupSelectorOpen] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const { toast } = useToast();
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,11 +41,7 @@ export default function ScheduledMessagePage() {
   // Gestion des erreurs
   const showError = (message: string) => {
     if (typeof window !== 'undefined') {
-      toast({
-        title: 'Erreur',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error(message);
     }
   };
 
@@ -138,11 +133,7 @@ export default function ScheduledMessagePage() {
       // Récupérer le token depuis les cookies
       const token = getTokenFromCookies();
       if (!token) {
-        toast({
-          title: 'Session expirée',
-          description: 'Veuillez vous reconnecter',
-          variant: 'destructive',
-        });
+        toast.error('Session expirée');
         router.push('/login');
         return;
       }
@@ -204,12 +195,8 @@ export default function ScheduledMessagePage() {
       
       const responseData = await response.json();
       
-      toast({
-        title: 'Succès',
-        description: `Message programmé pour ${selectedContacts.length} destinataire(s)`,
-        variant: 'default',
-      });
-      
+      toast.success(`Message programmé pour ${selectedContacts.length} destinataire(s)`);
+
       // Réinitialiser le formulaire
       setSelectedContacts([]);
       setMessage('');

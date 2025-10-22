@@ -88,13 +88,13 @@ export default function ProfilePage() {
     const loadProfile = async () => {
         try {
             setLoading(true);
-            
+
             // Récupération sécurisée de l'utilisateur depuis les cookies
             const userCookie = document.cookie
                 .split('; ')
                 .find(row => row.startsWith('user='))
                 ?.split('=')[1];
-            
+
             let user = {};
             if (userCookie) {
                 try {
@@ -103,7 +103,7 @@ export default function ProfilePage() {
                     console.error('Erreur lors du parsing des données utilisateur:', error);
                 }
             }
-            
+
             // Utiliser l'ID de l'utilisateur ou une valeur par défaut
             const clientId = user?.id || '700001';
             const data = await fetchUserProfile(clientId);

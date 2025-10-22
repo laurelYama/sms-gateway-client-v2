@@ -8,9 +8,7 @@ import { Eye, EyeOff, MessageCircle } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useToast, Toaster } from "@/components/ui/use-toast";
-import { ToastAction } from "@/components/ui/toast";
-import { Toast, ToastDescription, ToastTitle } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 import { API_CONFIG } from "@/lib/config";
 
@@ -36,7 +34,6 @@ interface ApiResponse {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { toast } = useToast();
   
   // Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
@@ -198,16 +195,7 @@ export default function LoginPage() {
         }
         
         // Afficher le toast d'erreur
-        toast({
-          variant: "destructive",
-          title: errorTitle,
-          description: errorMessage,
-          action: (
-            <ToastAction altText="Réessayer" onClick={handleSubmit}>
-              Réessayer
-            </ToastAction>
-          ),
-        });
+        toast.error(errorMessage);
         
         // Ne pas lancer d'exception pour les erreurs courantes
         if (errorCode === 401 || errorCode === 400) {
@@ -301,12 +289,7 @@ export default function LoginPage() {
         });
       
         // Afficher le message de bienvenue avec un toast
-        toast({
-          variant: 'default',
-          className: 'bg-green-500 text-white border-0',
-          title: 'Connexion réussie',
-          description: `Bienvenue ${user.prenom || user.nom || ''} !`,
-        });
+        toast.success('Connexion réussie');
         
         // Vérifier s'il y a une URL de redirection dans l'URL
         const searchParams = new URLSearchParams(window.location.search);
@@ -420,9 +403,7 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <Toaster />
-      <div className="h-screen w-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-[#0171BB] md:to-[#8DC73C] p-0 m-0 overflow-hidden">
+    <div className="h-screen w-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-[#0171BB] md:to-[#8DC73C] p-0 m-0 overflow-hidden">
         <div className="w-full h-full bg-white flex flex-col md:flex-row">
           {/* Section gauche - Branding - Cachée sur mobile */}
           <div className="hidden md:flex bg-[#0072BB] text-white p-8 flex-col justify-center items-center text-center md:w-1/2 h-full">
@@ -552,6 +533,5 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }

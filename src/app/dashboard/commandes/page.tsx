@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,8 +46,6 @@ export default function CommandesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('TOUS');
   const [dateFilter, setDateFilter] = useState<{from?: Date, to?: Date}>({});
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
-  const { toast } = useToast();
-  
   // Récupérer l'utilisateur connecté
   const user = getUserFromCookies();
   
@@ -93,11 +91,7 @@ export default function CommandesPage() {
         setTotalItems(data.length);
       } catch (error) {
         console.error('Erreur lors du chargement de l\'historique:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger l\'historique des commandes',
-          variant: 'destructive',
-        });
+        toast.error('Erreur lors du chargement des commandes');
       } finally {
         setIsLoadingHistory(false);
       }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { changePassword } from '@/lib/api/settings';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -17,8 +17,6 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -48,10 +46,7 @@ export default function SettingsPage() {
         newPassword: newPassword
       });
       
-      toast({
-        title: 'Succès',
-        description: 'Votre mot de passe a été mis à jour avec succès',
-      });
+      toast.success('Mot de passe modifié avec succès');
       
       // Réinitialiser le formulaire
       setCurrentPassword('');
@@ -60,11 +55,7 @@ export default function SettingsPage() {
       
     } catch (error) {
       console.error('Erreur lors du changement de mot de passe:', error);
-      toast({
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Une erreur est survenue lors du changement de mot de passe',
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Une erreur est survenue lors de la modification du mot de passe');
     } finally {
       setIsLoading(false);
     }

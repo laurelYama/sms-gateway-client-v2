@@ -204,7 +204,6 @@ export default function ApiKeysPage() {
               <p>Consultez la documentation complète de l'API pour plus d'informations sur les points de terminaison disponibles.</p>
               <a
                 href="https://api-smsgateway.solutech-one.com/api/V1/documents/download/f58a58af-be16-42f7-992e-88ac18f8757a_Documentation_SMS_Gateway.pdf"
-                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-sm font-medium text-primary hover:underline"
               >

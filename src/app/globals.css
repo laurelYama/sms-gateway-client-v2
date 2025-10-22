@@ -3,6 +3,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Styles personnalisés pour les toasts */
+:root {
+  --toast-success: #10b981;
+  --toast-success-foreground: #ffffff;
+  --toast-destructive: #ef4444;
+  --toast-destructive-foreground: #ffffff;
+}
+
+/* Styles pour la variante success */
+.toast-success {
+  background-color: var(--toast-success) !important;
+  color: var(--toast-success-foreground) !important;
+  border-color: var(--toast-success) !important;
+}
+
+.toast-success [data-close] {
+  color: var(--toast-success-foreground) !important;
+}
+
+/* Styles pour la variante destructive */
+.toast-destructive {
+  background-color: var(--toast-destructive) !important;
+  color: var(--toast-destructive-foreground) !important;
+  border-color: var(--toast-destructive) !important;
+}
+
+.toast-destructive [data-close] {
+  color: var(--toast-destructive-foreground) !important;
+}
+
 /* Reset des marges et paddings */
 html, body {
   margin: 0;

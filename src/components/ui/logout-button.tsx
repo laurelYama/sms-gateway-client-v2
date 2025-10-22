@@ -2,11 +2,10 @@
 
 import { Button } from "./button";
 import { useRouter } from 'next/navigation';
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from 'sonner';
 
 export function LogoutButton() {
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
@@ -22,6 +21,7 @@ export function LogoutButton() {
         // Rediriger vers la page de connexion
         router.push('/login');
         router.refresh(); // Forcer le rafraîchissement pour mettre à jour l'interface
+        toast.success('Déconnexion réussie');
       } else {
         throw new Error('Échec de la déconnexion');
       }

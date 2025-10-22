@@ -73,92 +73,126 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
   };
 
   const toggleContactSelection = (contactNumber: string, contactName: string = '') => {
-    // Nettoyer le numéro
-    const cleanedNumber = contactNumber.replace(/\D/g, '');
-    
-    // Extraire l'indicatif pays (241 pour le Gabon)
-    let number = cleanedNumber;
-    let countryCode = 'GA'; // Par défaut
-    
-    if (cleanedNumber.startsWith('241') && cleanedNumber.length > 3) {
-      // Numéro gabonais avec indicatif
-      countryCode = 'GA';
-      number = cleanedNumber.substring(3); // Enlever l'indicatif
-    } else if (cleanedNumber.startsWith('33') && cleanedNumber.length > 2) {
-      // Numéro français avec indicatif
-      countryCode = 'FR';
-      number = cleanedNumber.substring(2); // Enlever l'indicatif
-    } else if (cleanedNumber.match(/^[0-9]{9}$/)) {
-      // Numéro sans indicatif (9 chiffres) - on considère que c'est un numéro gabonais
-      countryCode = 'GA';
-      number = cleanedNumber;
-    }
-    
-    const fullNumber = countryCode === 'GA' 
-      ? `241${number}` 
-      : countryCode === 'FR' 
-        ? `33${number}` 
-        : number;
-        
-    // Créer l'objet contact avec toutes les informations
+    // Créer l'objet contact avec le numéro exact et le nom
     const contactInfo = {
-      number,
-      countryCode,
-      fullNumber,
-      contactName: contactName || `Contact ${number}`
+      number: contactNumber,
+      countryCode: '',
+      fullNumber: contactNumber,
+      contactName: contactName || ''
     };
     
-    // Vérifier si le contact est déjà sélectionné
-    const isSelected = selectedContacts.includes(fullNumber);
+    // Vérifier si le même contact est déjà sélectionné
+    const existingContactIndex = selectedContacts.findIndex(contact => 
+      typeof contact === 'string' 
+        ? contact === contactNumber 
+        : contact.number === contactNumber
+    );
     
-    if (isSelected) {
-      // Retirer le contact de la sélection
-      onSelectContacts(selectedContacts.filter(num => num !== fullNumber));
+    if (existingContactIndex !== -1) {
+      // Désélectionner ce contact spécifique
+      onSelectContacts(selectedContacts.filter((_, index) => index !== existingContactIndex));
     } else {
-      // Ajouter le contact à la sélection
-      onSelectContacts([...selectedContacts, fullNumber]);
+      // Ajouter le nouveau contact à la sélection existante
+      onSelectContacts([...selectedContacts, contactInfo]);
     }
   };
 
   const toggleGroupSelection = (groupId: string) => {
     if (!groupContacts[groupId]) return;
     
-    const allGroupNumbers = groupContacts[groupId].map(c => {
-      // Même logique de formatage que pour les contacts individuels
-      const cleanedNumber = c.contactNumber.replace(/\D/g, '');
-      let number = cleanedNumber;
-      let countryCode = 'GA';
-      
-      if (cleanedNumber.startsWith('241') && cleanedNumber.length > 3) {
-        countryCode = 'GA';
-        number = cleanedNumber.substring(3);
-      } else if (cleanedNumber.startsWith('33') && cleanedNumber.length > 2) {
-        countryCode = 'FR';
-        number = cleanedNumber.substring(2);
-      } else if (cleanedNumber.match(/^[0-9]{9}$/)) {
-        countryCode = 'GA';
-        number = cleanedNumber;
-      }
-      
-      return countryCode === 'GA' 
-        ? `241${number}` 
-        : countryCode === 'FR' 
-          ? `33${number}` 
-          : number;
-    });
+    // Créer des objets ContactInfo pour tous les contacts du groupe
+    const groupContactInfos = groupContacts[groupId].map(contact => ({
+      number: contact.contactNumber,
+      countryCode: '',
+      fullNumber: contact.contactNumber,
+      contactName: contact.contactName || ''
+    }));
     
-    const allSelected = allGroupNumbers.every(num => 
-      selectedContacts.includes(num)
+    // Vérifier si tous les contacts du groupe sont déjà sélectionnés
+    const allSelected = groupContactInfos.every(contactInfo => 
+      selectedContacts.some(selected => 
+        typeof selected === 'string' 
+          ? selected === contactInfo.number 
+          : selected.number === contactInfo.number
+      )
     );
     
     if (allSelected) {
       // Désélectionner tous les contacts du groupe
       onSelectContacts(
-        selectedContacts.filter(num => !allGroupNumbers.includes(num))
+        selectedContacts.filter(selected => 
+          !groupContactInfos.some(contactInfo => 
+            typeof selected === 'string'
+              ? selected === contactInfo.number
+              : selected.number === contactInfo.number
+          )
+        )
       );
     } else {
-      // Sélectionner tous les contacts du groupe
-      const newSelections = [...new Set([...selectedContacts, ...allGroupNumbers])];
+      // Ajouter les contacts du groupe à la sélection existante
+      const newSelections = [...selectedContacts];
+      
+      groupContactInfos.forEach(contactInfo => {
+        const exists = newSelections.some(selected => 
+          typeof selected === 'string'
+            ? selected === contactInfo.number
+            : selected.number === contactInfo.number
+        );
+        
+        if (!exists) {
+          newSelections.push(contactInfo);
+        }
+      });
+      
+      onSelectContacts(newSelections);
+    }
+  };
+
+  // Sélectionner ou désélectionner tous les contacts visibles
+  const selectAllVisibleContacts = () => {
+    // Si tout est déjà sélectionné, on désélectionne tout
+    if (allVisibleSelected) {
+      const visibleContactNumbers = new Set<string>();
+      
+      // Récupérer tous les numéros de contacts visibles
+      filteredGroups.forEach(group => {
+        const groupContactsList = groupContacts[group.idClientsGroups] || [];
+        groupContactsList.forEach(contact => {
+          visibleContactNumbers.add(contact.contactNumber);
+        });
+      });
+      
+      // Filtrer pour ne garder que les contacts non visibles
+      const newSelections = selectedContacts.filter(contact => {
+        const number = typeof contact === 'string' ? contact : contact.number;
+        return !visibleContactNumbers.has(number);
+      });
+      
+      onSelectContacts(newSelections);
+    } else {
+      // Sinon, on ajoute tous les contacts visibles
+      const newSelections = [...selectedContacts];
+      
+      filteredGroups.forEach(group => {
+        const groupContactsList = groupContacts[group.idClientsGroups] || [];
+        groupContactsList.forEach(contact => {
+          const exists = newSelections.some(selected => 
+            typeof selected === 'string'
+              ? selected === contact.contactNumber
+              : selected.number === contact.contactNumber
+          );
+          
+          if (!exists) {
+            newSelections.push({
+              number: contact.contactNumber,
+              countryCode: '',
+              fullNumber: contact.contactNumber,
+              contactName: contact.contactName || ''
+            });
+          }
+        });
+      });
+      
       onSelectContacts(newSelections);
     }
   };
@@ -167,6 +201,18 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
   const filteredGroups = groups.filter(group => 
     group.nomGroupe.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Vérifier si tous les contacts visibles sont sélectionnés
+  const allVisibleSelected = filteredGroups.length > 0 && filteredGroups.every(group => {
+    const groupContactsList = groupContacts[group.idClientsGroups] || [];
+    return groupContactsList.length > 0 && groupContactsList.every(contact => 
+      selectedContacts.some(selected =>
+        typeof selected === 'string'
+          ? selected === contact.contactNumber
+          : selected.number === contact.contactNumber
+      )
+    );
+  });
 
   // Gérer le changement de recherche
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,11 +240,23 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">Sélectionner un groupe</CardTitle>
-        </div>
-        <div className="relative">
+      <CardHeader className="p-3">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-medium">Sélectionner un groupe</h3>
+            {filteredGroups.length > 0 && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm"
+                onClick={selectAllVisibleContacts}
+                className="h-7 px-2 text-xs"
+              >
+                {allVisibleSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </Button>
+            )}
+          </div>
+          <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
@@ -207,6 +265,7 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
             value={searchQuery}
             onChange={handleSearchChange}
           />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -234,19 +293,8 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
                 <div className="border-t bg-muted/20 p-2 space-y-1">
                   {groupContacts[group.idClientsGroups]?.length > 0 ? (
                     <>
-                      <div className="flex justify-between items-center p-2">
-                        <span className="text-sm">Tous les contacts</span>
-                        <button
-                          className="text-sm text-primary hover:no-underline cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleGroupSelection(group.idClientsGroups);
-                          }}
-                        >
-                          {groupContacts[group.idClientsGroups].every(contact => 
-                            selectedContacts.includes(contact.contactNumber)
-                          ) ? 'Tout désélectionner' : 'Tout sélectionner'}
-                        </button>
+                      <div className="p-2">
+                        <span className="text-sm font-medium">Contacts du groupe</span>
                       </div>
                       {groupContacts[group.idClientsGroups].map((contact) => (
                         <div 

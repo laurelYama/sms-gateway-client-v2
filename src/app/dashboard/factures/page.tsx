@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getFacturesClient, getCalendrierFacturation, downloadFacturePdf, type Facture, type CalendrierFacturation } from '@/lib/api/billing';
 import { getTokenFromCookies } from '@/lib/auth';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -31,8 +31,6 @@ export default function FacturesPage() {
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = factures.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(factures.length / rowsPerPage);
-
-  const { toast } = useToast();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -60,11 +58,7 @@ export default function FacturesPage() {
       setFactures(facturesValides);
     } catch (error) {
       console.error('Erreur lors de la récupération des factures:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les factures',
-        variant: 'destructive',
-      });
+      toast.error('Erreur lors du chargement des factures');
       setFactures([]);
     } finally {
       setLoading(false);
@@ -95,10 +89,7 @@ export default function FacturesPage() {
         
         // Si c'est une tentative de secours, ne pas afficher de message
         if (!isRetry) {
-          toast({
-            title: 'Information',
-            description: `Aucun calendrier de facturation disponible pour l'année ${year}`,
-          });
+          toast.error(`Aucun calendrier de facturation disponible pour l'année ${year}`);
         }
         
         setHasValidYear(false);
@@ -136,11 +127,7 @@ export default function FacturesPage() {
       
       // Ne pas afficher de message d'erreur si c'est une tentative de secours
       if (!isRetry) {
-        toast({
-          title: 'Aucun calendrier disponible',
-          description: 'Aucun calendrier de facturation n\'est disponible pour le moment. Veuillez contacter votre administrateur.',
-          variant: 'destructive',
-        });
+        toast.error('Aucun calendrier disponible');
       }
     } finally {
       setLoading(false);
@@ -153,11 +140,7 @@ export default function FacturesPage() {
       await downloadFacturePdf(facture.id, filename);
     } catch (error) {
       console.error('Erreur lors du téléchargement de la facture:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de télécharger la facture',
-        variant: 'destructive',
-      });
+      toast.error('Erreur lors du téléchargement de la facture');
     }
   };
 

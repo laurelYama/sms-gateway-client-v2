@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Users, ChevronDown, ChevronRight, User, Check } from 'lucide-react';
 import { fetchContacts } from '@/lib/api/contacts';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 interface ContactInfo {
   number: string;
@@ -24,7 +24,6 @@ export default function GroupSelector({ onSelectContacts, selectedContacts }: Gr
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [groupContacts, setGroupContacts] = useState<Record<string, Array<{contactNumber: string, contactName: string}>>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   // Charger les groupes
   useEffect(() => {
@@ -38,18 +37,14 @@ export default function GroupSelector({ onSelectContacts, selectedContacts }: Gr
         setGroups(data);
       } catch (error) {
         console.error('Erreur lors du chargement des groupes:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les groupes',
-          variant: 'destructive',
-        });
+        toast.error('Erreur lors du chargement des groupes');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadGroups();
-  }, [toast]);
+  }, []);
 
   // Charger les contacts d'un groupe
   const loadGroupContacts = async (groupId: string) => {
@@ -67,98 +62,39 @@ export default function GroupSelector({ onSelectContacts, selectedContacts }: Gr
       setExpandedGroup(groupId);
     } catch (error) {
       console.error('Erreur lors du chargement des contacts du groupe:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les contacts du groupe',
-        variant: 'destructive',
-      });
+      toast.error('Erreur lors du chargement des contacts du groupe');
     }
   };
 
-  // Basculer la sélection d'un contact
+  // Sélectionner un contact (toujours remplacer le contact actuel)
   const toggleContactSelection = (contactNumber: string, contactName: string = '') => {
-    // Nettoyer le numéro
-    const cleanedNumber = contactNumber.replace(/\D/g, '');
-    
-    // Extraire l'indicatif pays (241 pour le Gabon)
-    let number = cleanedNumber;
-    let countryCode = 'GA'; // Par défaut
-    
-    if (cleanedNumber.startsWith('241') && cleanedNumber.length > 3) {
-      countryCode = 'GA';
-      number = cleanedNumber.substring(3);
-    } else if (cleanedNumber.startsWith('33') && cleanedNumber.length > 2) {
-      countryCode = 'FR';
-      number = cleanedNumber.substring(2);
-    } else if (cleanedNumber.match(/^[0-9]{9}$/)) {
-      countryCode = 'GA';
-      number = cleanedNumber;
-    }
-    
-    const fullNumber = countryCode === 'GA' 
-      ? `241${number}` 
-      : countryCode === 'FR' 
-        ? `33${number}` 
-        : number;
-
+    // Créer un objet contact avec le numéro exactement comme il est
     const contactInfo: ContactInfo = {
-      number,
-      countryCode,
-      fullNumber,
+      number: contactNumber,
+      countryCode: '',
+      fullNumber: contactNumber,
       contactName: contactName || undefined
     };
-
-    onSelectContacts(
-      selectedContacts.some(c => 
-        typeof c === 'string' ? c === contactNumber : c.fullNumber === fullNumber
-      )
-        ? selectedContacts.filter(c => 
-            typeof c === 'string' 
-              ? c !== contactNumber 
-              : c.fullNumber !== fullNumber
-          )
-        : [...selectedContacts, contactInfo]
-    );
+    
+    // Toujours sélectionner le nouveau contact (remplace l'ancien s'il y en a un)
+    onSelectContacts([contactInfo]);
   };
 
-  // Gérer la sélection/désélection d'un groupe entier
+  // Gérer la sélection du groupe (sélectionne le premier contact du groupe)
   const toggleGroupSelection = (groupId: string) => {
     const groupContactsList = groupContacts[groupId] || [];
-    const allGroupContactsSelected = groupContactsList.every(contact => 
-      selectedContacts.some(selected => 
-        typeof selected === 'string' 
-          ? selected === contact.contactNumber 
-          : selected.fullNumber === contact.contactNumber
-      )
-    );
-
-    if (allGroupContactsSelected) {
-      // Désélectionner tous les contacts du groupe
-      const groupContactNumbers = groupContactsList.map(c => c.contactNumber);
-      onSelectContacts(
-        selectedContacts.filter(contact => 
-          typeof contact === 'string'
-            ? !groupContactNumbers.includes(contact)
-            : !groupContactNumbers.includes(contact.fullNumber)
-        )
-      );
-    } else {
-      // Sélectionner tous les contacts du groupe
-      const newSelections = groupContactsList.map(contact => ({
-        number: contact.contactNumber,
-        countryCode: 'GA',
-        fullNumber: contact.contactNumber,
-        contactName: contact.contactName
-      }));
+    
+    // Si on clique sur le groupe, on sélectionne le premier contact
+    if (groupContactsList.length > 0) {
+      const firstContact = groupContactsList[0];
       
-      const existingNumbers = new Set(
-        selectedContacts.map(c => typeof c === 'string' ? c : c.fullNumber)
-      );
-      const uniqueNewSelections = newSelections.filter(
-        contact => !existingNumbers.has(contact.fullNumber)
-      );
-      
-      onSelectContacts([...selectedContacts, ...uniqueNewSelections]);
+      // Sélectionner le premier contact du groupe (remplace toute sélection existante)
+      onSelectContacts([{
+        number: firstContact.contactNumber,
+        countryCode: '',
+        fullNumber: firstContact.contactNumber,
+        contactName: firstContact.contactName
+      }]);
     }
   };
 
@@ -216,7 +152,7 @@ export default function GroupSelector({ onSelectContacts, selectedContacts }: Gr
                         selectedContacts.some(selected => 
                           typeof selected === 'string' 
                             ? selected === contact.contactNumber 
-                            : selected.fullNumber === contact.contactNumber
+                            : selected.number === contact.contactNumber
                         )
                       ) ? 'Tout désélectionner' : 'Tout sélectionner'}
                     </button>
@@ -225,7 +161,7 @@ export default function GroupSelector({ onSelectContacts, selectedContacts }: Gr
                     const isSelected = selectedContacts.some(selected => 
                       typeof selected === 'string' 
                         ? selected === contact.contactNumber 
-                        : selected.fullNumber === contact.contactNumber
+                        : selected.number === contact.contactNumber
                     );
                     
                     return (

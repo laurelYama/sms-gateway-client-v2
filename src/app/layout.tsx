@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/use-toast";
+import { Toaster } from "sonner";
 import "./globals.css";
-import { ToastProvider } from "@/components/ui/toast";
-import { ToastViewport } from "@/components/ui/toast";
 import { RemoveExtensionAttributes } from "@/components/ui/remove-extension-attributes";
 
 const geistSans = Geist({
@@ -32,12 +30,9 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`} suppressHydrationWarning>
-        <ToastProvider>
-          {children}
-          <Toaster />
-          <ToastViewport />
-          <RemoveExtensionAttributes />
-        </ToastProvider>
+        {children}
+        <Toaster position="top-right" richColors />
+        <RemoveExtensionAttributes />
       </body>
     </html>
   );

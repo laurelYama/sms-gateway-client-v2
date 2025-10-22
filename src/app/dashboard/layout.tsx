@@ -17,23 +17,28 @@ export default function DashboardLayout({
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
       <ProtectedRoute>
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-        {/* Sidebar - visible uniquement sur desktop */}
-        {!isMobile && (
-          <div className="w-64 bg-white border-r border-gray-200">
-            <Sidebar />
-          </div>
-        )}
-
-        {/* Contenu principal */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex flex-col h-screen bg-gray-50">
           {/* Topbar - visible uniquement sur desktop */}
           {!isMobile && <Topbar />}
           
-          {/* Contenu */}
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-4 pb-20 md:pb-6 md:p-6">
-            {children}
-          </main>
+          <div className="flex flex-1 overflow-hidden">
+            {/* Sidebar - visible uniquement sur desktop */}
+            {!isMobile && (
+              <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0">
+                <Sidebar />
+              </div>
+            )}
+
+            {/* Contenu principal */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Contenu */}
+              <main className="flex-1 overflow-y-auto p-4 pb-20 md:pb-6 md:p-6">
+                <div className="max-w-7xl mx-auto w-full">
+                  {children}
+                </div>
+              </main>
+            </div>
+          </div>
           
           {/* Bottom Navigation - visible uniquement sur mobile */}
           {isMobile && (
@@ -41,7 +46,6 @@ export default function DashboardLayout({
               <BottomNav />
             </div>
           )}
-        </div>
         </div>
       </ProtectedRoute>
     </Suspense>

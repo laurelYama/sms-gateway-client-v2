@@ -2,19 +2,28 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { User, X, Send, RefreshCw, Users } from 'lucide-react';
+import { User, X, Send, RefreshCw, Users, XCircle } from 'lucide-react';
 import GroupContactsSelector from './group-contacts-selector';
 import { getTokenFromCookies, getUserFromCookies } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchCountryCodes } from '@/lib/api/countries';
 import { fetchEmetteurs } from '@/lib/api/emetteurs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form } from '@/components/ui/form';
+
+interface ContactInfo {
+  number: string;
+  countryCode: string;
+  fullNumber: string;
+  contactName?: string;
+}
+
+type ContactSelection = string | ContactInfo;
 
 interface Country {
   keyValue: string;
@@ -33,24 +42,23 @@ interface FormValues {
 }
 
 export function MessageSimpleForm() {
-  const { toast } = useToast();
   const form = useForm<FormValues>({
     defaultValues: {
       phone: '',
-      country: 'GA',
+      country: '', // Laissé vide pour être défini après le chargement des pays
     },
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
   const [emetteurs, setEmetteurs] = useState<Emetteur[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState('GA');
+  const [selectedCountry, setSelectedCountry] = useState(''); // Laissé vide initialement
   const [fullNumber, setFullNumber] = useState('');     // Numéro complet avec indicatif
   const [localNumber, setLocalNumber] = useState('');   // Numéro local sans indicatif
   const [message, setMessage] = useState('');
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
   const phoneInputRef = useRef<HTMLInputElement>(null);
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedContact, setSelectedContact] = useState<ContactSelection | null>(null);
 
   // Charger pays et émetteurs
   useEffect(() => {
@@ -61,6 +69,13 @@ export function MessageSimpleForm() {
             b.value2.replace(/\s/g, '').length - a.value2.replace(/\s/g, '').length
         );
         setCountries(sortedCountries);
+
+        // Trouver le pays avec l'indicatif +240
+        const defaultCountry = sortedCountries.find(c => c.value2.includes('240'));
+        if (defaultCountry) {
+          setSelectedCountry(defaultCountry.keyValue);
+          form.setValue('country', defaultCountry.keyValue);
+        }
 
         const emetteursData = await fetchEmetteurs();
         const sortedEmetteurs = [...emetteursData].sort((a, b) =>
@@ -83,42 +98,12 @@ export function MessageSimpleForm() {
     loadData();
   }, [toast]);
 
-  // Détection automatique du pays et extraction du numéro local
+  // Gestion de la saisie du numéro de téléphone
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.trim();
-
-    // Retirer tout sauf chiffres (on ignore + ici)
-    const numericValue = value.replace(/\D/g, '');
-
-    // Trier les pays par longueur de code décroissante
-    const sortedCountries = [...countries].sort(
-      (a, b) => b.value2.replace(/\D/g, '').length - a.value2.replace(/\D/g, '').length
-    );
-
-    // Chercher un pays qui correspond à un préfixe du numéro complet
-    let matchedCountry: Country | null = null;
-    let local = numericValue;
-
-    for (const country of sortedCountries) {
-      const code = country.value2.replace(/\D/g, ''); // ex: +241 -> 241
-      if (numericValue.startsWith(code)) {
-        matchedCountry = country;
-        local = numericValue.slice(code.length); // on retire l'indicatif pour l'input
-        break;
-      }
-    }
-
-    if (matchedCountry) {
-      setSelectedCountry(matchedCountry.keyValue);
-      form.setValue('country', matchedCountry.keyValue);
-    } else {
-      setSelectedCountry('GA'); // par défaut
-      form.setValue('country', 'GA');
-    }
-
-    setLocalNumber(local);            // input = numéro local
-    form.setValue('phone', local);
-    setFullNumber((matchedCountry?.value2.replace(/\s/g, '') || '+241') + local); // pour l'envoi
+    const inputValue = e.target.value;
+    // On conserve uniquement le numéro local (sans indicatif)
+    setLocalNumber(inputValue);
+    form.setValue('phone', inputValue);
   };
 
   // Changement manuel du pays
@@ -127,20 +112,44 @@ export function MessageSimpleForm() {
     form.setValue('country', code);
   };
 
-  // Sélection d’un contact
+  // Sélection d'un contact
   const handleContactSelect = (contacts: any[]) => {
     if (contacts.length === 0) {
-      setSelectedContacts([]);
+      setSelectedContact(null);
       setLocalNumber('');
       setFullNumber('');
       form.setValue('phone', '');
-      setSelectedCountry('GA');
+      setSelectedCountry('GQ');
+      form.setValue('country', 'GQ');
       return;
     }
 
     const contact = contacts[0];
-    const number = contact.number || contact;
-    handlePhoneChange({ target: { value: number } } as any);
+    let phoneNumber = '';
+    let contactName = '';
+
+    // Récupération du numéro exact tel qu'il est stocké
+    if (typeof contact === 'object') {
+      phoneNumber = contact.contactNumber || contact.number || '';
+      contactName = contact.contactName || '';
+    } else {
+      phoneNumber = contact;
+    }
+
+    // Création de l'objet contact avec le numéro exact
+    const contactInfo: ContactInfo = {
+      number: phoneNumber,
+      countryCode: '',
+      fullNumber: phoneNumber, // On conserve le numéro exact
+      contactName: contactName,
+    };
+
+    setSelectedContact(contactInfo);
+    setLocalNumber(phoneNumber); // Mise à jour du numéro local
+    setFullNumber(phoneNumber);  // Mise à jour du numéro complet
+    form.setValue('phone', phoneNumber);
+    
+    // On ne modifie pas le pays sélectionné pour conserver le comportement actuel du sélecteur
   };
 
   // Envoi du message
@@ -152,21 +161,47 @@ export function MessageSimpleForm() {
       if (!user?.id || !token) throw new Error('Non authentifié.');
       if (!message.trim()) throw new Error('Le message ne peut pas être vide.');
 
-      // Validation du numéro de téléphone
-      const country = countries.find(c => c.keyValue === selectedCountry);
-      if (!country) throw new Error('Pays non valide.');
+      // Récupérer le numéro saisi
+      let phoneNumber = localNumber;
+      let fullPhoneNumber = '';
       
-      const phoneNumber = `${country.value2.replace(/\s+/g, '')}${data.phone}`.replace(/\s+/g, '');
-      
-      // Vérification basique du format du numéro
-      if (!/^\+?[0-9]{8,15}$/.test(phoneNumber)) {
-        throw new Error('Le numéro de téléphone saisi est invalide. Vérifiez le format et réessayez.');
+      // Si un contact est sélectionné, utiliser son numéro exact sans ajouter d'indicatif
+      if (selectedContact) {
+        const selectedNumber = typeof selectedContact === 'string' 
+          ? selectedContact 
+          : selectedContact.number;
+        
+        // Nettoyer le numéro (supprimer tout ce qui n'est pas un chiffre ou +)
+        fullPhoneNumber = selectedNumber.startsWith('+') 
+          ? selectedNumber 
+          : `+${selectedNumber}`;
+      } else {
+        // Pour les numéros saisis manuellement, ajouter l'indicatif
+        const cleanNumber = phoneNumber.replace(/\D/g, '');
+        
+        // Vérification que le numéro n'est pas vide
+        if (!cleanNumber || cleanNumber.length === 0) {
+          throw new Error('Le numéro de téléphone ne peut pas être vide.');
+        }
+        
+        // Vérification du format du numéro (au moins 8 chiffres)
+        if (cleanNumber.length < 8) {
+          throw new Error('Le numéro de téléphone doit contenir au moins 8 chiffres.');
+        }
+        
+        // Récupérer l'indicatif du pays sélectionné
+        const selectedCountryData = countries.find(c => c.keyValue === selectedCountry);
+        const countryCode = selectedCountryData?.value2.replace(/\D/g, '') || '240';
+        
+        // Construire le numéro complet avec l'indicatif
+        fullPhoneNumber = `+${countryCode}${cleanNumber}`;
       }
-
+      
+      // Préparer le corps de la requête
       const body = {
         clientId: user.id,
         emetteur: selectedEmetteur,
-        destinataire: phoneNumber,
+        destinataire: fullPhoneNumber,
         corps: message,
       };
 
@@ -198,28 +233,34 @@ export function MessageSimpleForm() {
 
       const responseData = await res.json();
       
-      toast({ 
-        title: 'Succès', 
-        description: 'Message envoyé avec succès.',
-        variant: 'default',
-      });
+      toast.success('Message envoyé avec succès');
       
       // Réinitialisation du formulaire
-      form.reset({ phone: '', country: 'GA' });
+      const defaultCountry = countries.find(c => c.value2.includes('240'))?.keyValue || '';
+      form.reset({ phone: '', country: defaultCountry });
       setMessage('');
       setLocalNumber('');
       setFullNumber('');
-      setSelectedCountry('GA');
+      setSelectedCountry(defaultCountry);
+      setSelectedContact(null);
     } catch (err: any) {
-      toast({
-        title: 'Erreur',
-        description: err.message || 'Une erreur est survenue lors de l\'envoi du message.',
-        variant: 'destructive',
+      toast.error(err.message || 'Une erreur est survenue lors de l\'envoi du message', {
         duration: 5000,
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fonction pour effacer la sélection du contact
+  const clearSelection = () => {
+    const defaultCountry = countries.find(c => c.value2.includes('240'))?.keyValue || '';
+    setSelectedContact(null);
+    setLocalNumber('');
+    setFullNumber('');
+    form.setValue('phone', '');
+    setSelectedCountry(defaultCountry);
+    form.setValue('country', defaultCountry);
   };
 
   return (
@@ -230,7 +271,7 @@ export function MessageSimpleForm() {
               <div className="space-y-1">
                 <CardTitle className="text-2xl font-bold">Envoi de message simple</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Envoyez un message SMS à un ou plusieurs destinataires en quelques clics
+                  Envoyez un message SMS à un destinataire en quelques clics
                 </p>
               </div>
             </CardHeader>
@@ -245,57 +286,65 @@ export function MessageSimpleForm() {
                           Saisissez le numéro avec l'indicatif pays ou sélectionnez un contact
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <div className="w-1/3">
-                          <Select value={selectedCountry} onValueChange={handleCountryChange}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pays" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {countries.map(c => (
-                                  <SelectItem key={c.keyValue} value={c.keyValue}>
-                                    {c.value1} ({c.value2})
-                                  </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex-1 relative">
-                          <Input
-                              {...form.register('phone')}
-                              ref={phoneInputRef}
-                              type="tel"
-                              value={localNumber}
-                              onChange={handlePhoneChange}
-                              placeholder="Numéro de téléphone"
-                              className="pl-10"
-                          />
-                          {localNumber && (
-                              <button
-                                  type="button"
-                                  onClick={() => {
-                                    setLocalNumber('');
-                                    setFullNumber('');
-                                    form.setValue('phone', '');
-                                  }}
-                                  className="absolute inset-y-0 right-2 flex items-center"
+                      <div className="space-y-4">
+                        {selectedContact ? (
+                          <div className="border rounded-md p-3 bg-muted/20">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">
+                                  {typeof selectedContact === 'object' && selectedContact.contactName 
+                                    ? selectedContact.contactName 
+                                    : 'Numéro sélectionné'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {typeof selectedContact === 'object' 
+                                    ? selectedContact.fullNumber 
+                                    : selectedContact}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearSelection}
+                                className="text-muted-foreground hover:text-foreground"
                               >
-                                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                              </button>
-                          )}
-                        </div>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <div className="w-1/3">
+                              <Select 
+                                value={selectedCountry} 
+                                onValueChange={handleCountryChange}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pays" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {countries.map(c => (
+                                    <SelectItem key={c.keyValue} value={c.keyValue}>
+                                      {c.value1} ({c.value2})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex-1">
+                              <Input
+                                {...form.register('phone')}
+                                ref={phoneInputRef}
+                                type="tel"
+                                value={localNumber}
+                                onChange={handlePhoneChange}
+                                placeholder="Numéro de téléphone"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-
-                    <div>
-                      <Label>Message</Label>
-                      <Textarea
-                          placeholder="Saisissez votre message..."
-                          value={message}
-                          onChange={e => setMessage(e.target.value)}
-                          className="min-h-[120px]"
-                      />
-                      <p className="text-sm text-muted-foreground">{message.length}/160 caractères</p>
                     </div>
 
                     {emetteurs.length > 0 && (
@@ -315,6 +364,17 @@ export function MessageSimpleForm() {
                           </Select>
                         </div>
                     )}
+
+                    <div>
+                      <Label>Message</Label>
+                      <Textarea
+                          placeholder="Saisissez votre message..."
+                          value={message}
+                          onChange={e => setMessage(e.target.value)}
+                          className="min-h-[120px]"
+                      />
+                      <p className="text-sm text-muted-foreground">{message.length}/160 caractères</p>
+                    </div>
 
                     <div className="flex justify-end pt-4">
                       <Button type="submit" disabled={isLoading}>
@@ -348,7 +408,7 @@ export function MessageSimpleForm() {
                 <div className="h-[500px] overflow-y-auto">
                   <GroupContactsSelector
                       onSelectContacts={handleContactSelect}
-                      selectedContacts={selectedContacts}
+                      selectedContacts={selectedContact ? [selectedContact] : []}
                   />
                 </div>
               </CardContent>

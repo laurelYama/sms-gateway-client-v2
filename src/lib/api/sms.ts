@@ -467,6 +467,71 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
   }
 };
 
+/**
+ * Supprime un message spécifique par sa référence
+ * @param messageRef La référence du message à supprimer
+ * @returns Promise<boolean> true si la suppression a réussi
+ */
+export const deleteMessage = async (messageRef: string): Promise<boolean> => {
+  const token = getTokenFromCookies();
+  if (!token) throw new Error('Non authentifié');
+  
+  const user = getUserFromCookies();
+  if (!user || !user.id) throw new Error('Utilisateur non connecté');
+  
+  const url = `${API_BASE_URL}/api/sms/client/${user.id}/ref/${encodeURIComponent(messageRef)}`;
+  
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error: ApiError = new Error(errorData.message || 'Échec de la suppression du message');
+    error.status = response.status;
+    error.data = errorData;
+    throw error;
+  }
+
+  return true;
+};
+
+/**
+ * Supprime tous les messages du client
+ * @returns Promise<boolean> true si la suppression a réussi
+ */
+export const deleteAllMessages = async (): Promise<boolean> => {
+  const token = getTokenFromCookies();
+  if (!token) throw new Error('Non authentifié');
+  
+  const user = getUserFromCookies();
+  if (!user || !user.id) throw new Error('Utilisateur non connecté');
+  
+  const url = `${API_BASE_URL}/api/sms/client/${user.id}/all`;
+  
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error: ApiError = new Error(errorData.message || 'Échec de la suppression des messages');
+    error.status = response.status;
+    error.data = errorData;
+    throw error;
+  }
+
+  return true;
+};
+
 export const fetchMessages = async (
   type: 'unides' | 'muldes' | 'muldesp', 
   page: number = 1, 

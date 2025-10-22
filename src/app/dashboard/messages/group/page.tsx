@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { AlertCircle, Send, RefreshCw, Users, User, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,7 +27,6 @@ export default function GroupMessagePage() {
   const [error, setError] = useState('');
   const [emetteurs, setEmetteurs] = useState<Array<{id: string, nom: string}>>([]);
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
-  const { toast } = useToast();
   const router = useRouter();
   
   // Charger les émetteurs au montage du composant
@@ -77,7 +76,10 @@ export default function GroupMessagePage() {
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
-    return /^\d{1,15}$/.test(phone);
+    // Accepter :
+    // - Numéros commençant par + suivi de chiffres (ex: +33612345678)
+    // - Numéros avec uniquement des chiffres (ex: 33612345678)
+    return /^(\+\d{1,14}|\d{1,15})$/.test(phone);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,20 +97,12 @@ export default function GroupMessagePage() {
     // Vérifier que tous les numéros sont valides
     const invalidNumbers = selectedContacts.filter(contact => !validatePhoneNumber(contact.fullNumber));
     if (invalidNumbers.length > 0) {
-      toast({
-        title: 'Erreur',
-        description: `Certains numéros sont invalides : ${invalidNumbers.map(c => c.fullNumber).join(', ')}`,
-        variant: 'destructive',
-      });
+      toast.error(`Certains numéros sont invalides : ${invalidNumbers.map(c => c.fullNumber).join(', ')}`);
       return;
     }
 
     if (!message.trim()) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez saisir un message',
-        variant: 'destructive',
-      });
+      toast.error('Veuillez saisir un message');
       return;
     }
 
@@ -136,16 +130,9 @@ export default function GroupMessagePage() {
         throw new Error('Émetteur sélectionné introuvable');
       }
 
-      // Préparer les numéros pour l'envoi
+      // Préparer les numéros pour l'envoi - accepter tous les formats
       const numeros = selectedContacts.map(contact => {
-        if (contact.countryCode) {
-          if (contact.countryCode === 'GA' && !contact.fullNumber.startsWith('241')) {
-            return `241${contact.fullNumber}`;
-          }
-          if (contact.countryCode === 'FR' && !contact.fullNumber.startsWith('33')) {
-            return `33${contact.fullNumber}`;
-          }
-        }
+        // Retourner le numéro tel quel avec le + s'il est présent
         return contact.fullNumber;
       });
 
@@ -176,17 +163,36 @@ export default function GroupMessagePage() {
           statusText: response.statusText,
           headers: Object.fromEntries(response.headers.entries()),
         });
-        const errorMessage = await response.text();
-        throw new Error(errorMessage);
+        
+        try {
+          // Essayer de parser la réponse en JSON d'abord
+          const errorData = await response.json();
+          console.error('Détails de l\'erreur:', errorData);
+          
+          // Si l'API renvoie une liste de numéros invalides
+          if (errorData.invalidNumbers && Array.isArray(errorData.invalidNumbers)) {
+            throw new Error(`Certains numéros sont invalides : ${errorData.invalidNumbers.join(', ')}`);
+          }
+          
+          // Si l'API renvoie un message d'erreur
+          if (errorData.message) {
+            throw new Error(errorData.message);
+          }
+          
+          // Si on a des données mais pas de format connu
+          throw new Error(JSON.stringify(errorData, null, 2));
+          
+        } catch (jsonError) {
+          // Si le parsing JSON échoue, utiliser le texte brut
+          const errorText = await response.text();
+          console.error('Erreur brute de la réponse:', errorText);
+          throw new Error(errorText || 'Erreur inconnue lors de l\'envoi des messages');
+        }
       }
       
       const responseData = await response.json();
       
-      toast({
-        title: 'Succès',
-        description: `Message envoyé à ${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''}`,
-        variant: 'default',
-      });
+      toast.success(`Message envoyé à ${selectedContacts.length} contact(s) avec succès`);
 
       // Réinitialiser après l'envoi
       setSelectedContacts([]);
@@ -238,84 +244,55 @@ export default function GroupMessagePage() {
                         Sélection des destinataires
                       </Label>
                       
-                      {selectedContacts.length > 0 && (
-                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                          <div className="flex justify-between items-center mb-3">
-                            <p className="text-sm font-medium">
-                              {selectedContacts.length} destinataire{selectedContacts.length > 1 ? 's' : ''} sélectionné{selectedContacts.length > 1 ? 's' : ''}
-                            </p>
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setSelectedContacts([])}
-                              className="text-destructive hover:text-destructive/80"
-                            >
-                              Tout effacer
-                            </Button>
-                          </div>
-                          <div className="max-h-40 overflow-y-auto space-y-1 p-1">
-                            <div className="flex flex-wrap gap-2">
-                              {selectedContacts.map((contact, index) => {
-                                // Vérifier si le contact est valide
-                                if (!contact) return null;
-                                
-                                // Normaliser le format du contact
-                                let contactInfo;
-                                if (typeof contact === 'string') {
-                                  contactInfo = { 
-                                    fullNumber: contact, 
-                                    countryCode: 'GA',
-                                    contactName: ''
-                                  };
-                                } else {
-                                  contactInfo = {
-                                    fullNumber: contact.fullNumber || '',
-                                    countryCode: contact.countryCode || 'GA',
-                                    contactName: contact.contactName || ''
-                                  };
-                                }
-                                
-                                // Vérifier si le numéro est valide
-                                if (!contactInfo.fullNumber) return null;
-                                
-                                // Extraire les 4 derniers chiffres pour l'affichage
-                                const lastDigits = contactInfo.fullNumber.slice(-4);
-                                const displayName = contactInfo.contactName || `+${contactInfo.countryCode === 'GA' ? '241' : '33'}...${lastDigits}`;
-                                
-                                return (
-                                  <div 
-                                    key={`${contactInfo.fullNumber}-${index}`}
-                                    className="inline-flex items-center gap-1 bg-muted/50 hover:bg-muted rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={true}
-                                      onChange={() => setSelectedContacts(prev => 
-                                        prev.filter((_, i) => i !== index)
-                                      )}
-                                      className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
-                                    />
-                                    <span className="truncate max-w-[100px]">
-                                      {displayName}
-                                    </span>
-                                    <button 
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedContacts(prev => 
-                                          prev.filter((_, i) => i !== index)
-                                        );
-                                      }}
-                                      className="ml-1 text-muted-foreground hover:text-destructive"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                      {selectedContacts.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 p-3 bg-muted/20 rounded-md border">
+                          {selectedContacts.map((contact, index) => {
+                            // Normaliser le format du contact
+                            let contactInfo;
+                            if (typeof contact === 'string') {
+                              contactInfo = { 
+                                fullNumber: contact, 
+                                countryCode: 'GA',
+                                contactName: ''
+                              };
+                            } else {
+                              contactInfo = {
+                                fullNumber: contact.fullNumber || '',
+                                countryCode: contact.countryCode || 'GA',
+                                contactName: contact.contactName || ''
+                              };
+                            }
+                            
+                            // Vérifier si le numéro est valide
+                            if (!contactInfo.fullNumber) return null;
+                            
+                            const displayName = contactInfo.contactName || contactInfo.fullNumber;
+                            
+                            return (
+                              <div 
+                                key={`${contactInfo.fullNumber}-${index}`} 
+                                className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full border text-sm"
+                              >
+                                <span className="truncate max-w-[180px]">{displayName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedContacts(prev => 
+                                    prev.filter((_, i) => i !== index)
+                                  )}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  <span className="sr-only">Retirer</span>
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-4 bg-muted/20 rounded-md border">
+                          Aucun destinataire sélectionné. Sélectionnez des contacts dans la liste à droite.
                         </div>
                       )}
                       
@@ -327,31 +304,31 @@ export default function GroupMessagePage() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="emetteur" className="flex items-center gap-2">
-                          <Send className="h-4 w-4" />
-                          Émetteur
-                        </Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="emetteur" className="flex items-center gap-2 text-sm">
+                        <Send className="h-3.5 w-3.5" />
+                        Émetteur
+                      </Label>
+                      <div className="flex items-center gap-2">
                         <Select
                           value={selectedEmetteur}
                           onValueChange={setSelectedEmetteur}
                           disabled={isLoading || emetteurs.length === 0}
                         >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sélectionnez un émetteur" />
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Sélectionner..." />
                           </SelectTrigger>
                           <SelectContent>
                             {emetteurs.map((emetteur) => (
-                              <SelectItem key={emetteur.id} value={emetteur.id}>
+                              <SelectItem key={emetteur.id} value={emetteur.id} className="text-sm">
                                 {emetteur.nom}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         {emetteurs.length === 0 && (
-                          <p className="text-sm text-muted-foreground">
-                            Aucun émetteur disponible. Veuillez en créer un dans les paramètres.
+                          <p className="text-xs text-muted-foreground">
+                            Aucun émetteur disponible
                           </p>
                         )}
                       </div>
@@ -379,7 +356,7 @@ export default function GroupMessagePage() {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Saisissez votre message ici..."
-                        className="min-h-[150px] font-mono text-sm"
+                        className="min-h-[150px]"
                         maxLength={160}
                       />
                       <p className="text-xs text-muted-foreground">
