@@ -170,8 +170,6 @@ export default function ScheduledMessagePage() {
         dateFin: formatDate(dateFin)
       };
       
-      console.log('Envoi de la requête avec le body:', JSON.stringify(requestBody, null, 2));
-      
       const response = await fetch(API_ENDPOINTS.SMS.PROGRAMMES, {
         method: 'POST',
         headers: {
@@ -182,11 +180,9 @@ export default function ScheduledMessagePage() {
           'Pragma': 'no-cache',
           'Expires': '0'
         },
-        credentials: 'include', // Inclure les cookies dans la requête
+        credentials: 'include',
         body: JSON.stringify(requestBody)
       });
-      
-      console.log('Réponse reçue - Status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();

@@ -113,15 +113,7 @@ export default function ContactsPage() {
   const loadContacts = async () => {
     try {
       setLoading(true);
-      console.log('Chargement des contacts...');
       const data = await fetchContacts({});
-      console.log('Données des contacts reçues:', data);
-      
-      // Vérifier la structure des données
-      if (data.length > 0) {
-        console.log('Premier contact:', data[0]);
-        console.log('Groupe du premier contact:', data[0].clientsGroup);
-      }
       
       setContacts(data);
       setFilteredContacts(data);

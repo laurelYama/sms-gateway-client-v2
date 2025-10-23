@@ -13,74 +13,59 @@ export interface Groupe {
 
 export async function getGroupes(clientId: string): Promise<Groupe[]> {
   try {
-    console.log('[DEBUG] getGroupes - clientId:', clientId);
-    
     if (!clientId) {
-      console.error('ID client manquant pour la récupération des groupes');
-      return [];
+      throw new Error('ID client requis');
     }
     
     const token = getTokenFromCookies();
     if (!token) {
-      console.error('Token d\'authentification manquant');
-      return [];
+      throw new Error('Non authentifié');
     }
     
     const url = `${API_URL}?clientId=${encodeURIComponent(clientId)}`;
-    console.log('[DEBUG] getGroupes - URL:', url);
     
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     });
     
     const responseText = await response.text();
-    console.log('[DEBUG] getGroupes - Statut de la réponse:', response.status);
     
     if (!response.ok) {
-      console.error('[ERROR] getGroupes - Erreur de l\'API:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-        response: responseText
-      });
-      
       if (response.status === 401) {
-        // Nettoyage en cas d'erreur d'authentification
+        // Nettoyage en cas d'erreur 401
         localStorage.removeItem('user');
-        document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         window.location.href = '/login';
       }
       
-      return [];
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     }
     
     try {
       const data = JSON.parse(responseText);
-      console.log('[DEBUG] getGroupes - Données reçues:', data);
       
       // Vérifier si la réponse est un tableau
       if (Array.isArray(data)) {
-        return data as Groupe[];
+        return data;
       }
       
-      // Si ce n'est pas un tableau, essayer d'extraire un tableau d'une propriété
-      console.warn('La réponse de l\'API n\'est pas un tableau. Type reçu:', typeof data, 'Valeur:', data);
-      const possibleArray = data?.data || data?.items || data?.groupes;
-      
-      if (Array.isArray(possibleArray)) {
-        console.log('Tableau trouvé dans une propriété de l\'objet:', possibleArray);
-        return possibleArray as Groupe[];
+      // Si la réponse est un objet avec une propriété data qui est un tableau
+      if (data && Array.isArray(data.data)) {
+        return data.data;
       }
       
-      console.warn('Aucun tableau valide trouvé dans la réponse');
+      // Si la réponse est un objet avec d'autres propriétés
+      if (data && typeof data === 'object') {
+        return Object.values(data).find(Array.isArray) || [];
+      }
+      
       return [];
     } catch (parseError) {
-      console.error('Erreur lors du parsing de la réponse JSON:', parseError);
-      console.error('Contenu de la réponse:', responseText);
+      console.error('Erreur lors du parsing de la réponse des groupes');
       return [];
     }
   } catch (error) {
@@ -160,16 +145,45 @@ export async function updateGroupe(id: string, groupeData: {
   return response.json();
 }
 
-export async function deleteGroupe(id: string): Promise<void> {
-  const token = getTokenFromCookies();
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error('Erreur lors de la suppression du groupe');
+export async function deleteGroupe(id: string): Promise<{success: boolean; message?: string}> {
+  try {
+    const token = getTokenFromCookies();
+    if (!token) {
+      return { success: false, message: 'Non authentifié' };
+    }
+    
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      let errorMessage = 'Erreur lors de la suppression du groupe';
+      
+      if (response.status === 500) {
+        errorMessage = 'Impossible de supprimer un groupe contenant des contacts';
+        return { success: false, message: errorMessage };
+      }
+      
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // Ignorer les erreurs de parsing de la réponse
+      }
+      
+      return { success: false, message: errorMessage };
+    }
+    
+    // Si on arrive ici, la suppression a réussi
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
+    return { success: false, message };
   }
 }

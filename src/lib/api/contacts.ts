@@ -48,10 +48,8 @@ export async function fetchContacts(searchParams?: ContactSearchParams): Promise
   }
   try {
     const token = getTokenFromCookies();
-    console.log('Token récupéré:', token ? '***' : 'Aucun token trouvé');
     
     if (!token) {
-      console.error('Erreur: Aucun token d\'authentification trouvé');
       window.location.href = '/login';
       return [];
     }
@@ -61,8 +59,6 @@ export async function fetchContacts(searchParams?: ContactSearchParams): Promise
       url = `${API_BASE_URL}/contacts/group/${searchParams.groupId}`;
     }
     
-    console.log('Tentative de récupération des contacts depuis:', url);
-    
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -70,19 +66,10 @@ export async function fetchContacts(searchParams?: ContactSearchParams): Promise
       },
     });
 
-    console.log('Réponse du serveur:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
     const responseText = await response.text();
     
     if (!response.ok) {
-      console.error('Erreur de réponse:', response.status, response.statusText, responseText);
-      
       if (response.status === 401) {
-        console.error('Erreur 401: Non autorisé - Redirection vers la page de connexion');
         window.location.href = '/login';
         return [];
       }
@@ -93,20 +80,16 @@ export async function fetchContacts(searchParams?: ContactSearchParams): Promise
     try {
       // Essayer de parser la réponse en JSON
       const data = JSON.parse(responseText);
-      console.log('Données brutes de l\'API:', data);
       
       // Vérifier si la réponse est un tableau
       if (Array.isArray(data)) {
-        console.log('Contacts traités:', data);
         return data as Contact[];
       }
       
       // Si ce n'est pas un tableau, essayer d'extraire un tableau d'une propriété
-      console.warn('La réponse de l\'API n\'est pas un tableau. Type reçu:', typeof data, 'Valeur:', data);
       const possibleArray = data?.data || data?.items || data?.contacts;
       
       if (Array.isArray(possibleArray)) {
-        console.log('Tableau trouvé dans une propriété de l\'objet:', possibleArray);
         return possibleArray as Contact[];
       }
       
@@ -273,8 +256,6 @@ export async function deleteContact(contactId: string): Promise<void> {
     if (!token) {
       throw new Error('Non authentifié');
     }
-
-    console.log('Suppression du contact avec l\'ID:', contactId);
     
     const response = await fetch(`${API_BASE_URL}/contacts/${contactId}`, {
       method: 'DELETE',
@@ -283,8 +264,6 @@ export async function deleteContact(contactId: string): Promise<void> {
         'Authorization': `Bearer ${token}`,
       },
     });
-
-    console.log('Réponse de la suppression:', response.status, response.statusText);
     
     if (!response.ok) {
       let errorMessage = `Erreur ${response.status} lors de la suppression du contact`;
@@ -297,10 +276,7 @@ export async function deleteContact(contactId: string): Promise<void> {
       }
       throw new Error(errorMessage);
     }
-    
-    console.log('Contact supprimé avec succès');
   } catch (error) {
-    console.error('Erreur lors de la suppression du contact:', error);
     throw error;
   }
 }

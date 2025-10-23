@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { fetchLastClosedTicket, Ticket } from "@/lib/api/tickets";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SmsDailyChart } from "@/components/dashboard/SmsDailyChart";
-import { getTokenFromCookies, getUserFromCookies, decodeJwtPayload } from "@/lib/auth";
+import { getTokenFromCookies, getUserFromCookies, decodeJwtToken } from "@/lib/auth";
 import { 
   getSmsCountThisMonth, 
   getClientGroups, 
@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const resolveClientId = (): string | undefined => {
     const token = Cookies.get("authToken");
     if (token) {
-      const payload = decodeJwtPayload(token);
+      const payload = decodeJwtToken(token);
       return payload?.id || payload?.sub;
     }
     const user = Cookies.get("user");
@@ -151,7 +151,6 @@ export default function DashboardPage() {
     const refreshData = async () => {
       try {
         await fetchDashboardData();
-        console.log('Données du tableau de bord rafraîchies silencieusement');
       } catch (error) {
         console.error('Erreur lors du rafraîchissement des données:', error);
       }
@@ -171,7 +170,6 @@ export default function DashboardPage() {
   const loadSmsStats = useCallback(async (period: "today" | "7d" | "month") => {
     setLoadingStats(true);
     try {
-      console.log(`Chargement des statistiques pour la période: ${period}`);
       
       // Récupérer le token d'authentification
       const token = getTokenFromCookies();
@@ -216,8 +214,6 @@ export default function DashboardPage() {
         fetchSmsData('muldes'),
         fetchSmsData('muldesp')
       ]);
-      
-      console.log('Données récupérées:', { unides, muldes, muldesp });
       
       // Stocker les données brutes pour le graphique
       setSmsStats({

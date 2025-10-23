@@ -198,15 +198,11 @@ export default function HistoriquePage() {
       setIsLoading(true);
       setError('');
       
-      console.log(`Chargement des messages de type: ${activeTab}`);
-      
       // Récupérer les données depuis l'API
       const data = await fetchMessages(activeTab, 1, 1000);
-      console.log('Données reçues de l\'API:', data);
       
       // Vérifier si les données sont valides
       if (!data || !Array.isArray(data.data)) {
-        console.error('Format de données invalide:', data);
         setError('Format de données invalide reçu du serveur');
         setAllMessages([]);
         return;
@@ -220,20 +216,16 @@ export default function HistoriquePage() {
         messages = messages.map(msg => ({
           ...msg,
           destinataires: msg.destinataires || msg.Destinataires || [],
-          type: 'MULDES' // S'assurer que le type est cohérent
+          type: 'MULDES'
         }));
       }
       
       setAllMessages(messages);
       
       if (messages.length > 0) {
-        console.log(`Reçu ${messages.length} messages`);
-        console.log('Exemple de message:', messages[0]);
-        
         // Appliquer les filtres initiaux
         applyFilters(messages);
       } else {
-        console.log('Aucun message trouvé');
         setFilteredMessages([]);
         setDisplayedMessages([]);
         setTotalItems(0);
@@ -255,8 +247,6 @@ export default function HistoriquePage() {
 
   // Appliquer les filtres, le tri par date et la pagination
   const applyFilters = (messages: Message[]) => {
-    console.log('applyFilters called with messages:', messages);
-    
     if (!messages || messages.length === 0) {
       setFilteredMessages([]);
       setDisplayedMessages([]);
@@ -306,8 +296,6 @@ export default function HistoriquePage() {
         return false;
       });
     }
-
-    console.log('Messages after filtering:', filtered);
     
     // Mettre à jour le nombre total d'éléments filtrés
     setTotalItems(filtered.length);
@@ -315,8 +303,6 @@ export default function HistoriquePage() {
     // Appliquer la pagination
     const startIndex = (page - 1) * pageSize;
     const paginatedMessages = filtered.slice(startIndex, startIndex + pageSize);
-    
-    console.log('Paginated messages:', paginatedMessages);
     
     // Mettre à jour les états
     setFilteredMessages(filtered);
@@ -395,14 +381,9 @@ export default function HistoriquePage() {
     );
   };
 
-  // Log pour déboguer la structure des messages
+  // Effet pour gérer les messages affichés
   useEffect(() => {
-    if (displayedMessages.length > 0) {
-      console.log('Message example:', displayedMessages[0]);
-      console.log('Destinataires:', displayedMessages[0].Destinataires);
-      console.log('destinataire:', displayedMessages[0].destinataire);
-      console.log('recipients:', displayedMessages[0].recipients);
-    }
+    // Logique de gestion des messages affichés
   }, [displayedMessages]);
 
   return (

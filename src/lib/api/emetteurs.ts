@@ -22,21 +22,12 @@ export async function fetchEmetteurs(): Promise<Emetteur[]> {
 
     // Récupération de l'ID client de manière sécurisée
     const clientId = getClientId();
-    console.log('[DEBUG] Récupération des émetteurs - clientId:', clientId);
     
     if (!clientId) {
       throw new Error('ID client non trouvé. Veuillez vous reconnecter.');
     }
     
     const url = `https://api-smsgateway.solutech-one.com/api/V1/emetteurs/client/${clientId}`;
-    console.log('[DEBUG] URL de la requête fetchEmetteurs:', url);
-    
-    console.log('[DEBUG] En-têtes de la requête fetchEmetteurs:', {
-      'Authorization': `Bearer ${token.substring(0, 10)}...`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'credentials': 'include'
-    });
 
     const response = await fetch(url, {
       method: 'GET',
@@ -46,13 +37,6 @@ export async function fetchEmetteurs(): Promise<Emetteur[]> {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-    });
-
-    console.log('[DEBUG] Réponse de fetchEmetteurs:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url,
-      headers: Object.fromEntries(response.headers.entries())
     });
 
     const responseText = await response.text();
@@ -169,7 +153,6 @@ export async function createEmetteur(emetteurData: { nom: string }): Promise<Eme
       
       // Si c'est une erreur d'authentification, déconnecter l'utilisateur
       if (response.status === 401) {
-        console.error('[AUTH] Erreur d\'authentification, déconnexion...');
         localStorage.removeItem('user');
         Cookies.remove('authToken');
         window.location.href = '/login';

@@ -33,7 +33,6 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
   const [loading, setLoading] = useState(false);
   const [groupes, setGroupes] = useState<Array<{id: string, nomGroupe: string}>>([]);
   const [loadingGroupes, setLoadingGroupes] = useState(true);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(groupId || '');
   const [countries, setCountries] = useState<Array<{keyValue: string, value1: string, value2: string}>>([]);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [countryCode, setCountryCode] = useState('');
@@ -47,14 +46,13 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
     },
   });
 
-  // Charger les pays depuis l'API
+  // Charger les pays et les groupes depuis l'API
   useEffect(() => {
     const loadCountries = async () => {
       try {
         const countryData = await fetchCountryCodes();
         
         if (!countryData || countryData.length === 0) {
-          console.warn('Aucun pays disponible');
           setCountries([]);
           setSelectedCountry('');
           setCountryCode('');
@@ -74,7 +72,6 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
           setCountryCode(defaultCountry.value2);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des pays:', error);
         setCountries([]);
         setSelectedCountry('');
         setCountryCode('');
@@ -85,30 +82,22 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       try {
         setLoadingGroupes(true);
         
-        // Récupérer l'utilisateur connecté
         const user = getUserFromCookies();
-        console.log('Utilisateur depuis les cookies:', user);
         
         if (!user) {
           throw new Error('Veuillez vous reconnecter');
         }
         
-        // Vérifier que l'utilisateur a un ID client
         if (!user.id) {
           throw new Error('ID utilisateur non trouvé');
         }
         
-        // Récupérer les groupes de l'utilisateur
-        console.log('Récupération des groupes pour l\'utilisateur:', user.id);
         const data = await getGroupes(user.id);
-        console.log('Groupes récupérés:', data);
         
-        // Mapper les données pour correspondre au type attendu
-        // Utiliser un Set pour éliminer les doublons basés sur l'ID
         const uniqueGroups = Array.from(
           new Map(
             data.map(group => [
-              group.idClientsGroups, // Utiliser l'ID comme clé pour éliminer les doublons
+              group.idClientsGroups,
               {
                 id: group.idClientsGroups,
                 nomGroupe: group.nomGroupe || 'Sans nom'
@@ -117,19 +106,14 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
           ).values()
         );
         
-        console.log('Groupes uniques:', uniqueGroups);
         setGroupes(uniqueGroups);
         
-        // Mettre à jour la valeur du formulaire avec le groupe sélectionné
         if (groupId && uniqueGroups.some(g => g.id === groupId)) {
           form.setValue('groupId', groupId);
-          setSelectedGroupId(groupId);
         } else if (uniqueGroups.length > 0) {
           form.setValue('groupId', uniqueGroups[0].id);
-          setSelectedGroupId(uniqueGroups[0].id);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des groupes:', error);
         toast.error('Erreur lors du chargement des groupes');
       } finally {
         setLoadingGroupes(false);
@@ -140,8 +124,8 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       loadCountries();
       loadGroupes();
     }
-  }, [open, groupId]); // Retirer form des dépendances
-  
+  }, [open, groupId, form]);
+
   // Mettre à jour le formulaire si le groupId change
   useEffect(() => {
     if (groupId) {
@@ -150,33 +134,25 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
   }, [groupId, form]);
 
   const onSubmit = async (data: ContactFormValues) => {
-    console.log('1. Début de la soumission du formulaire avec les données:', data);
-    
     // Validation supplémentaire
     if (!data.name || !data.number) {
-      console.error('Données manquantes:', data);
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
     
     if (!data.groupId) {
-      console.error('Aucun groupe sélectionné');
       toast.error('Veuillez sélectionner un groupe');
       return;
     }
     
     try {
       setLoading(true);
-      console.log('2. Chargement activé');
       
       const token = getTokenFromCookies();
-      console.log('3. Token récupéré:', token ? '***' : 'Aucun token trouvé');
       
       if (!token) {
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
       }
-      
-      console.log('4. Préparation de la requête API');
       
       // Récupérer les données du pays sélectionné
       const selectedCountryData = countries.find(c => c.keyValue === selectedCountry);
@@ -194,8 +170,6 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
         countryCode: selectedCountryData?.value2 || ''
       };
       
-      console.log('Données de la requête:', JSON.stringify(requestBody, null, 2));
-      
       const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/contacts/create', {
         method: 'POST',
         headers: {
@@ -208,14 +182,8 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       });
       
       const responseData = await response.json();
-      console.log('Réponse de l\'API:', responseData);
       
       if (!response.ok) {
-        console.error('Erreur API:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: responseData
-        });
         throw new Error(responseData.message || `Erreur ${response.status}: ${response.statusText}`);
       }
       
@@ -228,33 +196,16 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       });
       onSuccess?.();
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du contact:', error);
       toast.error(error instanceof Error ? error.message : 'Erreur lors de l\'ajout du contact');
     } finally {
       setLoading(false);
     }
   };
 
-  console.log('Rendu du composant AddContactDialog - État open:', open);
-  
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      console.log('Changement d\'état de la modale:', isOpen);
-      setOpen(isOpen);
-      if (isOpen) {
-        // Réinitialiser le formulaire quand la modale s'ouvre
-        form.reset({
-          name: '',
-          number: '',
-          groupId: groupId || ''
-        });
-      }
-    }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" onClick={() => {
-          console.log('Clic sur le bouton Ajouter un contact');
-          setOpen(true);
-        }}>
+        <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un contact
         </Button>
@@ -288,36 +239,34 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 <FormField
                   name="countryCode"
                   render={() => (
-                    <div className="flex gap-2">
-                      <div className="w-1/3">
-                        <Select
-                          value={selectedCountry}
-                          onValueChange={(value) => {
-                            const country = countries.find(c => c.keyValue === value);
-                            if (country) {
-                              setSelectedCountry(value);
-                              setCountryCode(country.value2);
-                            }
-                          }}
-                          disabled={loading || countries.length === 0}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={
-                              countries.length === 0 ? 'Chargement...' : 'Sélectionnez un pays'
-                            } />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {countries.map((country) => (
-                              <SelectItem 
-                                key={country.keyValue} 
-                                value={country.keyValue}
-                              >
-                                {country.value1} ({country.value2})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="w-1/3">
+                      <Select
+                        value={selectedCountry}
+                        onValueChange={(value) => {
+                          const country = countries.find(c => c.keyValue === value);
+                          if (country) {
+                            setSelectedCountry(value);
+                            setCountryCode(country.value2);
+                          }
+                        }}
+                        disabled={loading || countries.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            countries.length === 0 ? 'Chargement...' : 'Sélectionnez un pays'
+                          } />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem 
+                              key={country.keyValue} 
+                              value={country.keyValue}
+                            >
+                              {country.value1} ({country.value2})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 />
@@ -334,7 +283,6 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                           disabled={loading}
                           value={field.value || ''}
                           onChange={(e) => {
-                            // N'autoriser que les chiffres et espaces
                             const value = e.target.value.replace(/[^\d\s]/g, '');
                             field.onChange(value);
                           }}
@@ -411,3 +359,5 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
     </Dialog>
   );
 }
+
+export default AddContactDialog;

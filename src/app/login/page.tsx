@@ -259,7 +259,7 @@ export default function LoginPage() {
           // domain: window.location.hostname
         };
 
-        console.log('[AUTH] Définition des cookies avec options:', cookieOptions);
+        // console.log('[AUTH] Définition des cookies avec options:', cookieOptions);
         
         // Définir les cookies avec les options
         Cookies.set('authToken', token, cookieOptions);
@@ -281,12 +281,11 @@ export default function LoginPage() {
         document.cookie = `authToken=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
         document.cookie = `user=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
         
-        // Vérifier que les cookies ont bien été définis
-        console.log('[AUTH] Cookies après définition:', {
-          authToken: document.cookie.includes('authToken') ? 'DÉFINI' : 'NON DÉFINI',
-          user: document.cookie.includes('user=') ? 'DÉFINI' : 'NON DÉFINI',
-          allCookies: document.cookie
-        });
+        // console.log('[AUTH] Cookies après définition:', {
+        //   authToken: document.cookie.includes('authToken') ? 'DÉFINI' : 'NON DÉFINI',
+        //   user: document.cookie.includes('user=') ? 'DÉFINI' : 'NON DÉFINI',
+        //   allCookies: document.cookie
+        // });
       
         // Afficher le message de bienvenue avec un toast
         toast.success('Connexion réussie');

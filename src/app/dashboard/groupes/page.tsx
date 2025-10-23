@@ -40,6 +40,7 @@ export default function GroupesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [groupeToDelete, setGroupeToDelete] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [clientId, setClientId] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
@@ -47,46 +48,45 @@ export default function GroupesPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('[DEBUG] Chargement des données utilisateur...');
       const userData = await getUserFromCookies();
-      console.log('[DEBUG] Données utilisateur:', userData);
       
       if (!userData) {
+        console.error('Aucune donnée utilisateur trouvée dans les cookies');
         throw new Error('Aucune donnée utilisateur trouvée');
       }
       
+      console.log('User from cookies:', userData);
       setUser(userData);
       
-      if (!userData.id) {
-        throw new Error('ID utilisateur manquant');
+      // Définir le clientId à partir de l'utilisateur
+      const currentClientId = userData.clientId || userData.id;
+      if (!currentClientId) {
+        console.error('ID client manquant dans les données utilisateur');
+        throw new Error('ID client manquant');
       }
       
-      console.log('[DEBUG] Récupération des groupes pour le client ID:', userData.id);
-      const data = await getGroupes(userData.id);
+      setClientId(currentClientId);
+      console.log('Chargement des groupes pour le client ID:', currentClientId);
+      
+      const data = await getGroupes(currentClientId);
       
       if (!Array.isArray(data)) {
-        console.error('[ERROR] Les données reçues ne sont pas un tableau:', data);
+        console.error('Les données reçues ne sont pas un tableau:', data);
         throw new Error('Format de données invalide reçu du serveur');
       }
-      
-      console.log(`[DEBUG] ${data.length} groupes récupérés`);
       
       // Trier par date de création (du plus récent au plus ancien)
       const sortedData = [...data].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       
-      // Pour le débogage, afficher les IDs des groupes
-      console.log('[DEBUG] IDs des groupes:', sortedData.map(g => g.idClientsGroups));
-      
-      // D'abord, récupérer tous les contacts une seule fois
+      // Récupérer les contacts pour compter par groupe
       try {
-        console.log('[DEBUG] Récupération de tous les contacts...');
         const token = document.cookie.split('; ').find(row => row.startsWith('authToken='))?.split('=')[1];
         if (!token) throw new Error('Token non trouvé');
         
         const response = await fetch(
-          API_ENDPOINTS.CONTACTS_BY_CLIENT(userData.id),
+          API_ENDPOINTS.CONTACTS_BY_CLIENT(clientId),
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -100,7 +100,6 @@ export default function GroupesPage() {
         }
         
         const allContacts = await response.json();
-        console.log('[DEBUG] Tous les contacts récupérés:', allContacts);
         
         // Compter les contacts par groupe
         const groupesAvecCompteur = sortedData.map(groupe => {
@@ -108,21 +107,18 @@ export default function GroupesPage() {
             contact.clientsGroup?.idClientsGroups === groupe.idClientsGroups
           ).length;
           
-          console.log(`[DEBUG] Groupe ${groupe.nomGroupe} (${groupe.idClientsGroups}): ${count} contacts`);
-          
           return {
             ...groupe,
             contactCount: count
           };
         });
         
-        console.log('[DEBUG] Groupes avec compteur:', groupesAvecCompteur);
         setGroupes(groupesAvecCompteur);
         setFilteredGroupes(groupesAvecCompteur);
         return;
         
       } catch (error) {
-        console.error('[ERROR] Erreur lors de la récupération des contacts:', error);
+        console.error('Erreur lors de la récupération des contacts:', error);
         // En cas d'erreur, on initialise les compteurs à 0
         const groupesAvecCompteur = sortedData.map(groupe => ({
           ...groupe,
@@ -195,15 +191,69 @@ export default function GroupesPage() {
 
   const paginate = (pageNumber: number) => setPage(pageNumber);
 
-  const handleDelete = async (id: string) => {
+  const handleCreateGroupe = async (data: { nom: string; description: string }) => {
+    if (!clientId) {
+      toast.error('Impossible de créer un groupe : ID client manquant');
+      return;
+    }
+    
     try {
-      await deleteGroupe(id);
+      const token = getTokenFromCookies();
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
+      
+      const response = await fetch(API_ENDPOINTS.CLIENT_GROUPS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nomGroupe: data.nom,
+          descriptionGroupe: data.description,
+          clientId: clientId
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la création du groupe');
+      }
+      
+      const newGroupe = await response.json();
+      setGroupes(prev => [newGroupe, ...prev]);
+      toast.success('Groupe créé avec succès');
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Erreur lors de la création du groupe:', error);
+      toast.error('Erreur lors de la création du groupe', {
+        description: error instanceof Error ? error.message : 'Une erreur inconnue est survenue'
+      });
+    }
+  };
+
+  const handleDelete = async (id: string): Promise<boolean> => {
+    const result = await deleteGroupe(id);
+    
+    if (result.success) {
       setGroupes(groupes.filter(groupe => groupe.idClientsGroups !== id));
       toast.success('Groupe supprimé avec succès');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du groupe:', error);
-      toast.error('Erreur lors de la suppression du groupe');
+      return true;
     }
+    
+    // Gestion des erreurs
+    if (result.message?.includes('Impossible de supprimer un groupe contenant des contacts')) {
+      toast.error('Action impossible', {
+        description: 'Vous ne pouvez pas supprimer un groupe qui contient des contacts. Veuillez d\'abord supprimer ou déplacer les contacts avant de supprimer le groupe.'
+      });
+    } else {
+      toast.error('Erreur lors de la suppression du groupe', {
+        description: result.message || 'Une erreur inconnue est survenue'
+      });
+    }
+    
+    return false;
   };
 
   const handleEdit = (groupe: Groupe) => {
@@ -376,8 +426,16 @@ export default function GroupesPage() {
                       variant="destructive"
                       onClick={async () => {
                         if (!groupeToDelete) return;
-                        await handleDelete(groupeToDelete);
-                        setDeleteDialogOpen(false);
+                        try {
+                          const success = await handleDelete(groupeToDelete);
+                          if (success) {
+                            setDeleteDialogOpen(false);
+                            setGroupeToDelete(null); // Réinitialiser l'ID du groupe à supprimer
+                          }
+                        } catch (error) {
+                          console.error('Erreur dans le gestionnaire de suppression:', error);
+                          // Ne pas fermer la boîte de dialogue en cas d'erreur
+                        }
                       }}
                     >
                       Supprimer

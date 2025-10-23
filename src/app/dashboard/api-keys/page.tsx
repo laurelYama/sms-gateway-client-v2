@@ -202,16 +202,53 @@ export default function ApiKeysPage() {
             </pre>
             <div className="mt-4 space-y-2">
               <p>Consultez la documentation complète de l'API pour plus d'informations sur les points de terminaison disponibles.</p>
-              <a
-                href="https://api-smsgateway.solutech-one.com/api/V1/documents/download/f58a58af-be16-42f7-992e-88ac18f8757a_Documentation_SMS_Gateway.pdf"
-                rel="noopener noreferrer"
+              <button
+                onClick={async () => {
+                  try {
+                    const token = document.cookie.split('; ').find(row => row.startsWith('authToken='))?.split('=')[1];
+                    if (!token) {
+                      window.location.href = '/login';
+                      return;
+                    }
+                    
+                    const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/documents/download/Documentation_SMS_Gateway.pdf', {
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                      },
+                    });
+                    
+                    if (!response.ok) throw new Error('Échec du téléchargement');
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Documentation_SMS_Gateway.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    
+                    toast({
+                      title: 'Téléchargement démarré',
+                      description: 'La documentation est en cours de téléchargement',
+                    });
+                  } catch (error) {
+                    console.error('Erreur lors du téléchargement:', error);
+                    toast({
+                      title: 'Erreur',
+                      description: 'Impossible de télécharger la documentation',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
                 className="inline-flex items-center text-sm font-medium text-primary hover:underline"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Télécharger la documentation complète (PDF)
-              </a>
+              </button>
             </div>
           </div>
         </CardContent>

@@ -3,6 +3,7 @@
 import { Menu, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
+import { toast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
@@ -39,16 +40,48 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <Button 
             variant="ghost" 
             size="icon"
-            asChild
+            onClick={async () => {
+              try {
+                const token = document.cookie.split('; ').find(row => row.startsWith('authToken='))?.split('=')[1];
+                if (!token) {
+                  window.location.href = '/login';
+                  return;
+                }
+                
+                const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/documents/download/Documentation_SMS_Gateway.pdf', {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+                
+                if (!response.ok) throw new Error('Échec du téléchargement');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Documentation_SMS_Gateway.pdf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                
+                toast({
+                  title: 'Téléchargement démarré',
+                  description: 'La documentation est en cours de téléchargement',
+                });
+              } catch (error) {
+                console.error('Erreur lors du téléchargement:', error);
+                toast({
+                  title: 'Erreur',
+                  description: 'Impossible de télécharger la documentation',
+                  variant: 'destructive',
+                });
+              }
+            }}
             title="Télécharger la documentation"
           >
-            <a
-              href="https://api-smsgateway.solutech-one.com/api/V1/documents/download/f58a58af-be16-42f7-992e-88ac18f8757a_Documentation_SMS_Gateway.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Download className="h-5 w-5" />
-            </a>
+            <Download className="h-5 w-5" />
           </Button>
           
           <div className="flex items-center space-x-4">

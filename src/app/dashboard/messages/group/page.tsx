@@ -142,8 +142,6 @@ export default function GroupMessagePage() {
         numeros,
         corps: message
       };
-
-      console.log('Envoi de la requête avec le body:', JSON.stringify(requestBody, null, 2));
       
       const response = await fetch(API_ENDPOINTS.SMS.MULTIPLES, {
         method: 'POST',
@@ -154,15 +152,9 @@ export default function GroupMessagePage() {
         },
         body: JSON.stringify(requestBody)
       });
-
-      console.log('Réponse reçue - Status:', response.status);
       
       if (!response.ok) {
-        console.error('Erreur API - Détails:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-        });
+        console.error('Erreur API:', response.status, response.statusText);
         
         try {
           // Essayer de parser la réponse en JSON d'abord

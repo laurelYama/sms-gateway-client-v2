@@ -23,7 +23,6 @@ export async function fetchCountryCodes(): Promise<CountryCode[]> {
   try {
     // Vérifier si on est côté navigateur
     if (typeof window === 'undefined') {
-      console.warn('fetchCountryCodes appelé côté serveur - retourne une liste vide');
       return [];
     }
 
@@ -41,8 +40,6 @@ export async function fetchCountryCodes(): Promise<CountryCode[]> {
     if (!endpoint) {
       return handleError('URL du endpoint des pays non définie');
     }
-    
-    console.log('Tentative de récupération des pays depuis:', endpoint);
     
     let response;
     try {
@@ -121,7 +118,6 @@ export async function fetchCountryCodes(): Promise<CountryCode[]> {
       return handleError('Format de données des pays invalide');
     }
     
-    console.log(`${data.length} pays chargés avec succès`);
     return data;
     
   } catch (error) {

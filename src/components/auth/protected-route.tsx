@@ -17,12 +17,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         const token = getTokenFromCookies();
         const user = getUserFromCookies();
         
-        console.log('[AUTH] Vérification de l\'authentification...');
-        console.log('[AUTH] Token présent:', !!token);
-        console.log('[AUTH] Utilisateur présent:', !!user);
-        
         if (!token || !user) {
-          console.warn('[AUTH] Non authentifié, redirection vers /login');
           // Ne pas rediriger si on est déjà sur la page de login
           if (pathname !== '/login') {
             const redirectUrl = new URL('/login', window.location.origin);
@@ -31,20 +26,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           }
           setIsAuth(false);
         } else {
-          console.log('[AUTH] Utilisateur authentifié:', { 
-            id: user.id, 
-            email: user.email,
-            role: user.role 
-          });
           setIsAuth(true);
         }
       } catch (error) {
-        console.error('[AUTH] Erreur lors de la vérification de l\'authentification:', error);
         setIsAuth(false);
         if (pathname !== '/login') {
           const redirectUrl = new URL('/login', window.location.origin);
-          redirectUrl.searchParams.set('error', 'auth_error');
-          redirectUrl.searchParams.set('redirect', pathname);
+          redirectUrl.searchParams.set('error', 'session_expired');
           window.location.href = redirectUrl.toString();
         }
       } finally {

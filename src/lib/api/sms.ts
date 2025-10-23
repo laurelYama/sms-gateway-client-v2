@@ -413,8 +413,6 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
   };
 
   try {
-    console.log('Récupération des statistiques SMS...');
-    
     // Récupérer les SMS des 3 types avec gestion d'erreur individuelle
     const [unides, muldes, muldesp] = await Promise.allSettled([
       fetch(`${API_BASE_URL}/api/V1/sms/unides/${user.id}`, { headers })
@@ -430,8 +428,6 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
         result.status === 'fulfilled' ? result.value : []
       )
     ) as [MessageUnides[], MessageMuldes[], MessageMuldes[]];
-    
-    console.log('Données brutes récupérées:', { unides, muldes, muldesp });
 
     const now = new Date();
     const currentMonth = now.getMonth();

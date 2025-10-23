@@ -12,9 +12,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, Save, Edit, X, User, Building2, MapPin, Phone, Mail, Globe, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { fetchUserProfile, updateUserProfile, type UserProfile } from '@/lib/api/user';
+import { getTokenFromCookies } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Schéma de validation amélioré
 const profileFormSchema = z.object({
@@ -23,15 +25,11 @@ const profileFormSchema = z.object({
     }).max(100, {
         message: 'La raison sociale ne peut pas dépasser 100 caractères.',
     }),
-    secteurActivite: z.string().min(2, {
-        message: 'Le secteur d\'activité doit contenir au moins 2 caractères.',
-    }).max(100, {
-        message: 'Le secteur d\'activité ne peut pas dépasser 100 caractères.',
+    secteurActivite: z.string({
+        required_error: 'Veuillez sélectionner un secteur d\'activité',
     }),
-    ville: z.string().min(2, {
-        message: 'La ville doit contenir au moins 2 caractères.',
-    }).max(50, {
-        message: 'La ville ne peut pas dépasser 50 caractères.',
+    ville: z.string({
+        required_error: 'Veuillez sélectionner une ville',
     }),
     adresse: z.string().max(200, {
         message: 'L\'adresse ne peut pas dépasser 200 caractères.',
@@ -68,6 +66,8 @@ export default function ProfilePage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [userData, setUserData] = useState<UserProfile | null>(null);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [villes, setVilles] = useState<Array<{keyValue: string, value1: string}>>([]);
+    const [secteurs, setSecteurs] = useState<Array<{keyValue: string, value1: string}>>([]);
     const [initialValues, setInitialValues] = useState<ProfileFormValues>({
         raisonSociale: '',
         secteurActivite: '',
@@ -134,8 +134,56 @@ export default function ProfilePage() {
         }
     };
 
+    // Charger les données depuis les APIs
     useEffect(() => {
+        const fetchVilles = async () => {
+            try {
+                const token = getTokenFromCookies();
+                
+                if (!token) {
+                    throw new Error('Veuvez vous reconnecter pour continuer');
+                }
+
+                const [villesResponse, secteursResponse] = await Promise.all([
+                    fetch('https://api-smsgateway.solutech-one.com/api/V1/referentiel/categorie/001', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    }),
+                    fetch('https://api-smsgateway.solutech-one.com/api/V1/referentiel/categorie/002', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    })
+                ]);
+                
+                if (!villesResponse.ok || !secteursResponse.ok) {
+                    throw new Error('Erreur lors du chargement des données');
+                }
+                
+                const [villesData, secteursData] = await Promise.all([
+                    villesResponse.json(),
+                    secteursResponse.json()
+                ]);
+                
+                setVilles(villesData);
+                setSecteurs(secteursData);
+            } catch (error) {
+                console.error('Erreur:', error);
+                toast({
+                    title: 'Erreur',
+                    description: error instanceof Error ? error.message : 'Impossible de charger la liste des villes',
+                    variant: 'destructive',
+                });
+            }
+        };
+
         loadProfile();
+        fetchVilles();
     }, []);
 
     const handleOpenDialog = () => {
@@ -409,13 +457,27 @@ export default function ProfilePage() {
                                                 <Globe className="h-4 w-4" />
                                                 Secteur d'activité *
                                             </FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    {...field}
-                                                    disabled={saving}
-                                                    placeholder="Ex: Commerce, Services, Industrie"
-                                                />
-                                            </FormControl>
+                                            <Select 
+                                                onValueChange={field.onChange} 
+                                                defaultValue={field.value}
+                                                disabled={saving}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Sélectionnez un secteur d'activité" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {secteurs.map((secteur) => (
+                                                        <SelectItem 
+                                                            key={secteur.keyValue} 
+                                                            value={secteur.value1}
+                                                        >
+                                                            {secteur.value1}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -476,13 +538,27 @@ export default function ProfilePage() {
                                                 <MapPin className="h-4 w-4" />
                                                 Ville *
                                             </FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    {...field}
-                                                    disabled={saving}
-                                                    placeholder="Libreville"
-                                                />
-                                            </FormControl>
+                                            <Select 
+                                                onValueChange={field.onChange} 
+                                                defaultValue={field.value}
+                                                disabled={saving}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Sélectionnez une ville" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {villes.map((ville) => (
+                                                        <SelectItem 
+                                                            key={ville.keyValue} 
+                                                            value={ville.value1}
+                                                        >
+                                                            {ville.value1}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
