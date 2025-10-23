@@ -414,7 +414,7 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
 
   try {
     // Récupérer les SMS des 3 types avec gestion d'erreur individuelle
-    const [unides, muldes, muldesp] = await Promise.allSettled([
+    const [unidesResult, muldesResult, muldespResult] = await Promise.allSettled([
       fetch(`${API_BASE_URL}/api/V1/sms/unides/${user.id}`, { headers })
         .then(res => handleApiResponse<MessageUnides>(`unides`, res)),
       
@@ -423,11 +423,18 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
       
       fetch(`${API_BASE_URL}/api/V1/sms/muldesp/${user.id}`, { headers })
         .then(res => handleApiResponse<MessageMuldes>(`muldesp`, res))
-    ]).then(results => 
-      results.map(result => 
-        result.status === 'fulfilled' ? result.value : []
-      )
-    ) as [MessageUnides[], MessageMuldes[], MessageMuldes[]];
+    ]);
+
+    // Vérifier et convertir les résultats
+    const unides = unidesResult.status === 'fulfilled' && Array.isArray(unidesResult.value) ? unidesResult.value : [];
+    const muldes = muldesResult.status === 'fulfilled' && Array.isArray(muldesResult.value) ? muldesResult.value : [];
+    const muldesp = muldespResult.status === 'fulfilled' && Array.isArray(muldespResult.value) ? muldespResult.value : [];
+
+    console.log('Résultats des appels API:', {
+      unides: unides.length,
+      muldes: muldes.length,
+      muldesp: muldesp.length
+    });
 
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -440,28 +447,44 @@ export const getSmsCountThisMonth = async (): Promise<number> => {
     };
 
     // Compter les SMS unides du mois
-    const unidesCount = unides
-      .filter(sms => sms.statut === 'ENVOYE' && isThisMonth(sms.createdAt))
-      .length;
+    const unidesCount = Array.isArray(unides) 
+      ? unides.filter(sms => sms?.statut === 'ENVOYE' && isThisMonth(sms?.createdAt)).length 
+      : 0;
 
     // Compter les SMS muldes du mois (en comptant les destinataires)
-    const muldesCount = muldes
-      .filter(sms => sms.statut === 'ENVOYE' && isThisMonth(sms.createdAt))
-      .reduce((sum, sms) => sum + sms.Destinataires.length, 0);
+    const muldesCount = Array.isArray(muldes)
+      ? muldes
+          .filter(sms => sms?.statut === 'ENVOYE' && isThisMonth(sms?.createdAt))
+          .reduce((sum, sms) => {
+            const destinataires = sms?.Destinataires || [];
+            return sum + (Array.isArray(destinataires) ? destinataires.length : 0);
+          }, 0)
+      : 0;
 
     // Compter les SMS muldesp du mois (en comptant les destinataires)
-    const muldespCount = muldesp
-      .filter(sms => sms.statut === 'ENVOYE' && isThisMonth(sms.createdAt))
-      .reduce((sum, sms) => sum + sms.Destinataires.length, 0);
+    const muldespCount = Array.isArray(muldesp)
+      ? muldesp
+          .filter(sms => sms?.statut === 'ENVOYE' && isThisMonth(sms?.createdAt))
+          .reduce((sum, sms) => {
+            const destinataires = sms?.Destinataires || [];
+            return sum + (Array.isArray(destinataires) ? destinataires.length : 0);
+          }, 0)
+      : 0;
 
     return unidesCount + muldesCount + muldespCount;
   } catch (error) {
-    const apiError = error as ApiError;
-    console.error('Erreur lors du comptage des SMS:', {
-      message: apiError.message,
-      status: apiError.status,
-      data: apiError.data
-    });
+    // Gestion améliorée des erreurs
+    if (error instanceof Error) {
+      console.error('Erreur lors du comptage des SMS:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        ...(typeof error === 'object' && error !== null ? error : {})
+      });
+    } else {
+      console.error('Erreur inconnue lors du comptage des SMS:', error);
+    }
+    
     // Retourner 0 au lieu de lancer une erreur pour ne pas bloquer l'interface
     return 0;
   }

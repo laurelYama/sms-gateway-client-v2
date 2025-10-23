@@ -22,25 +22,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-// Icons
 import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Inbox,
   MessageSquare,
   Search,
   Trash2,
-  AlertTriangle,
   CheckCircle2,
   Clock,
   XCircle,
-  ExternalLink,
-  Loader2,
   Users,
-  FileDown,
   Info
 } from 'lucide-react';
 
@@ -61,6 +55,7 @@ interface Message {
   nbParJour?: number;
   intervalleMinutes?: number;
   clientId?: string;
+  updatedAt?: string;
 }
 
 export default function HistoriquePage() {
@@ -71,8 +66,6 @@ export default function HistoriquePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // États pour la suppression
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
@@ -85,140 +78,87 @@ export default function HistoriquePage() {
   const [currentRecipients, setCurrentRecipients] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
-  // Fonction pour supprimer un message
+  /** ======================= 🔹 FONCTIONS API ======================= **/
   const deleteMessage = async (ref: string) => {
-    let response: Response | null = null;
-    
-    try {
-      console.log('Tentative de suppression du message avec référence:', ref);
-      const token = await getTokenFromCookies();
-      if (!token) {
-        throw new Error('Aucun token d\'authentification trouvé');
-      }
-      
-      const user = await getUserFromCookies();
-      if (!user) {
-        throw new Error('Utilisateur non connecté');
-      }
-      
-      const clientId = user.id;
-      if (!clientId) {
-        throw new Error('ID client non trouvé dans les informations utilisateur');
-      }
-
-      const apiUrl = `https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/ref/${ref}`;
-      console.log('URL de l\'API appelée:', apiUrl);
-
-      response = await fetch(apiUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important pour les cookies
-      });
-
-      const responseText = await response.text();
-      console.log('Réponse brute du serveur:', responseText);
-      
-      let responseData;
-      try {
-        responseData = responseText ? JSON.parse(responseText) : {};
-      } catch (e) {
-        console.warn('La réponse n\'est pas au format JSON:', responseText);
-        responseData = { message: responseText };
-      }
-
-      console.log('Réponse du serveur:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        data: responseData
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          responseData?.message || 
-          responseData?.error ||
-          `Erreur ${response.status}: ${response.statusText || 'Erreur inconnue'}`
-        );
-      }
-
-      return responseData;
-    } catch (error) {
-      console.error('Erreur dans deleteMessage:', {
-        error,
-        response: response ? {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url
-        } : 'Aucune réponse du serveur',
-        timestamp: new Date().toISOString()
-      });
-      
-      if (error instanceof Error) {
-        throw error;
-      } else if (typeof error === 'string') {
-        throw new Error(error);
-      } else {
-        throw new Error('Une erreur inconnue est survenue lors de la suppression du message');
-      }
-    }
+    const token = await getTokenFromCookies();
+    const user = await getUserFromCookies();
+    const clientId = user?.id;
+    const url = `https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/ref/${ref}`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Erreur de suppression');
   };
 
-  // Fonction pour supprimer tous les messages
   const deleteAllMessages = async () => {
     const token = await getTokenFromCookies();
     const user = await getUserFromCookies();
-    const clientId = user?.id; // L'interface UserPayload contient un champ id
-
-    if (!clientId) {
-      throw new Error('ID client non trouvé');
-    }
-
-    const response = await fetch(`https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/all`, {
+    const clientId = user?.id;
+    const res = await fetch(`https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/all`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
+    if (!res.ok) throw new Error('Erreur lors de la suppression');
+  };
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Détails de l\'erreur:', errorData);
-      throw new Error(errorData.message || 'Erreur lors de la suppression des messages');
+  /** ======================= 🔹 FETCH + FILTRES ======================= **/
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const data = await fetchMessages(activeTab, 1, 1000);
+      const messages = Array.isArray(data.data) ? data.data : [];
+      setAllMessages(messages);
+      applyFilters(messages);
+    } catch (e: any) {
+      setError(e.message || 'Erreur de chargement');
+    } finally {
+      setIsLoading(false);
     }
-
-    return response.json();
   };
 
-  // Gestion de la suppression des messages
-  const handleDeleteClick = (messageRef: string) => {
-    setMessageToDelete(messageRef);
+  const applyFilters = (messages: Message[]) => {
+    let filtered = [...messages];
+    if (statusFilter) filtered = filtered.filter(m => m.statut === statusFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(m =>
+          m.corps?.toLowerCase().includes(q) ||
+          m.emetteur?.toLowerCase().includes(q) ||
+          m.destinataire?.toLowerCase().includes(q) ||
+          m.ref?.toLowerCase().includes(q)
+      );
+    }
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    setFilteredMessages(filtered);
+    setTotalItems(filtered.length);
+    const start = (page - 1) * pageSize;
+    setDisplayedMessages(filtered.slice(start, start + pageSize));
+  };
+
+  useEffect(() => { fetchData(); }, [activeTab]);
+  useEffect(() => { if (allMessages.length) applyFilters(allMessages); }, [allMessages, searchQuery, statusFilter, page, pageSize]);
+  useEffect(() => { setIsClient(true); }, []);
+
+  /** ======================= 🔹 ACTIONS ======================= **/
+  const handleDeleteClick = (ref: string) => {
+    setMessageToDelete(ref);
     setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteAllClick = () => {
-    setDeleteAllDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!messageToDelete) return;
-
     try {
       setIsDeleting(true);
       await deleteMessage(messageToDelete);
       toast.success('Message supprimé avec succès');
-      // Recharger les messages
-      await fetchData();
-    } catch (error) {
-      console.error('Erreur lors de la suppression du message:', error);
-      toast.error('Erreur lors de la suppression du message');
+      fetchData();
+    } catch {
+      toast.error('Erreur lors de la suppression');
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
-      setMessageToDelete(null);
     }
   };
 
@@ -226,685 +166,259 @@ export default function HistoriquePage() {
     try {
       setIsDeleting(true);
       await deleteAllMessages();
-      toast.success('Tous les messages ont été supprimés avec succès');
-      // Recharger les messages
-      await fetchData();
-    } catch (error) {
-      console.error('Erreur lors de la suppression des messages:', error);
-      toast.error('Erreur lors de la suppression des messages');
+      toast.success('Tous les messages supprimés');
+      fetchData();
+    } catch {
+      toast.error('Erreur lors de la suppression');
     } finally {
       setIsDeleting(false);
       setDeleteAllDialogOpen(false);
     }
   };
 
-  // Afficher tous les destinataires dans une boîte de dialogue
-  const handleShowAllRecipients = (message: any) => {
-    // Essayer différentes propriétés possibles pour les destinataires
-    const recipients = message.destinataires || message.Destinataires || message.recipients || [];
+  const handleShowAllRecipients = (message: Message) => {
+    const recipients = message.destinataires || message.Destinataires || [];
     setCurrentRecipients(recipients);
     setShowAllRecipients(true);
   };
 
-  // Charger les messages
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
-      
-      // Récupérer les données depuis l'API
-      const data = await fetchMessages(activeTab, 1, 1000);
-      
-      // Vérifier si les données sont valides
-      if (!data || !Array.isArray(data.data)) {
-        setError('Format de données invalide reçu du serveur');
-        setAllMessages([]);
-        return;
-      }
-      
-      // Mettre à jour les états avec les données
-      let messages = data.data || [];
-      
-      // Pour les messages groupés, formater les données pour une meilleure cohérence
-      if (activeTab === 'muldes') {
-        messages = messages.map(msg => ({
-          ...msg,
-          destinataires: msg.destinataires || msg.Destinataires || [],
-          type: 'MULDES'
-        }));
-      }
-      
-      setAllMessages(messages);
-      
-      if (messages.length > 0) {
-        // Appliquer les filtres initiaux
-        applyFilters(messages);
-      } else {
-        setFilteredMessages([]);
-        setDisplayedMessages([]);
-        setTotalItems(0);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      console.error('Erreur fetchData:', errorMessage, err);
-      setError(`Erreur lors du chargement des messages: ${errorMessage}`);
-      
-      // Réinitialiser les états en cas d'erreur
-      setAllMessages([]);
-      setFilteredMessages([]);
-      setDisplayedMessages([]);
-      setTotalItems(0);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Appliquer les filtres, le tri par date et la pagination
-  const applyFilters = (messages: Message[]) => {
-    if (!messages || messages.length === 0) {
-      setFilteredMessages([]);
-      setDisplayedMessages([]);
-      setTotalItems(0);
-      return;
-    }
-    
-    // Créer une copie des messages
-    let filtered = [...messages];
-    
-    // Trier les messages par date (du plus récent au plus ancien)
-    filtered = filtered.sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    // Filtrer par statut si un filtre est défini
-    if (statusFilter) {
-      filtered = filtered.filter(message => message.statut === statusFilter);
-    }
-
-    // Filtrer par recherche si une requête est définie
-    if (searchQuery) {
-      const query = searchQuery.trim().toLowerCase();
-      filtered = filtered.filter(message => {
-        // Vérifier dans le corps du message
-        if (message.corps && message.corps.toLowerCase().includes(query)) return true;
-        
-        // Vérifier dans l'émetteur
-        if (message.emetteur && message.emetteur.toLowerCase().includes(query)) return true;
-        
-        // Vérifier dans le destinataire unique
-        if (message.destinataire && message.destinataire.toLowerCase().includes(query)) return true;
-        
-        // Vérifier dans les destinataires multiples (propriété destinataires)
-        if (message.destinataires && message.destinataires.some(d => 
-          d && d.toLowerCase().includes(query)
-        )) return true;
-        
-        // Vérifier dans les destinataires multiples (propriété Destinataires)
-        if (message.Destinataires && message.Destinataires.some(d => 
-          d && d.toLowerCase().includes(query)
-        )) return true;
-        
-        // Vérifier dans la référence
-        if (message.ref && message.ref.toLowerCase().includes(query)) return true;
-        
-        return false;
-      });
-    }
-    
-    // Mettre à jour le nombre total d'éléments filtrés
-    setTotalItems(filtered.length);
-    
-    // Appliquer la pagination
-    const startIndex = (page - 1) * pageSize;
-    const paginatedMessages = filtered.slice(startIndex, startIndex + pageSize);
-    
-    // Mettre à jour les états
-    setFilteredMessages(filtered);
-    setDisplayedMessages(paginatedMessages);
-  };
-
-  // Mettre à jour les messages affichés quand les données, la recherche, le statut ou la page changent
-  useEffect(() => {
-    if (allMessages.length > 0) {
-      applyFilters(allMessages);
-    }
-  }, [allMessages, searchQuery, statusFilter, page, pageSize]);
-  
-  // Effet pour gérer le rendu côté client uniquement
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Charger les données au montage du composant et quand l'onglet change
-  useEffect(() => {
-    setPage(1);
-    setSearchQuery('');
-    setStatusFilter('');
-    fetchData();
-  }, [activeTab]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // La recherche est gérée par l'effet sur searchQuery
-    setPage(1); // Réinitialiser à la première page lors d'une nouvelle recherche
-  };
-
-  // Fonction pour changer le nombre d'éléments par page
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPageSize(Number(e.target.value));
-    setPage(1); // Réinitialiser à la première page lors du changement de taille de page
-  };
-  
-  // Fonction pour gérer le changement d'onglet avec réinitialisation de la page
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as MessageType);
-    setPage(1);
-  };
-
   const totalPages = Math.ceil(totalItems / pageSize);
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PPpp', { locale: fr });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'EN_ATTENTE': 'En attente',
-      'ENVOYE': 'Envoyé',
-      'ECHEC': 'Échec',
-      'ANNULE': 'Annulé',
-      'EN_COURS': 'En cours',
-      'TERMINE': 'Terminé',
-      'ERREUR': 'Erreur'
-    } as const;
-
-    const variantMap: Record<string, 'secondary' | 'default' | 'destructive' | 'outline' | 'success'> = {
-      'EN_ATTENTE': 'secondary',
-      'ENVOYE': 'default',
-      'EN_COURS': 'secondary',
-      'TERMINE': 'success',
-      'ECHEC': 'destructive',
-      'ERREUR': 'destructive',
-      'ANNULE': 'outline'
-    };
-
-    return (
-      <Badge variant={variantMap[status] || 'outline'}>
-        {statusMap[status] || status}
-      </Badge>
-    );
-  };
-
-  // Effet pour gérer les messages affichés
-  useEffect(() => {
-    // Logique de gestion des messages affichés
-  }, [displayedMessages]);
-
+  /** ======================= 🔹 RENDU ======================= **/
   return (
-    <div className="flex flex-col h-full">
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Historique des messages
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Consultez l'historique complet de vos envois de messages
-            </p>
+      <div className="flex flex-col h-full">
+        {/* === HEADER === */}
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                Historique des messages
+              </h1>
+              <p className="text-muted-foreground mt-1">Consultez l’historique complet de vos envois</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg px-4 py-2 text-sm">
+              <span className="font-medium text-foreground">{totalItems}</span> message{totalItems !== 1 ? 's' : ''}
+            </div>
           </div>
-          <div className="bg-muted/50 rounded-lg px-4 py-2 text-sm">
-            <span className="font-medium text-foreground">{totalItems}</span> message{totalItems !== 1 ? 's' : ''} au total
-          </div>
-        </div>
 
-        <div className="bg-card border rounded-lg p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher par référence, destinataire, message..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full bg-background"
-                />
-              </div>
-            </form>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDeleteAllClick}
-              disabled={isLoading || isDeleting || allMessages.length === 0}
-              className="whitespace-nowrap"
-            >
-              <Trash2 className="h-4 w-4" />
-              Tout supprimer
-            </Button>
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <span className="hidden sm:inline">Trié par :</span>
-              <span className="font-medium text-foreground">Date récente</span>
+          <div className="bg-card border rounded-lg p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <form onSubmit={(e) => e.preventDefault()} className="flex-1 max-w-2xl">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      placeholder="Rechercher par référence, destinataire, message..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full bg-background"
+                  />
+                </div>
+              </form>
+              <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)} disabled={isLoading || isDeleting || !allMessages.length}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Tout supprimer
+              </Button>
             </div>
           </div>
         </div>
-      </div>
 
-      <Tabs
-        defaultValue="unides" 
-        className="w-full" 
-        onValueChange={handleTabChange}
-        value={activeTab}
-      >
-        <TabsList className="h-auto p-1 bg-muted/50 border rounded-lg w-full sm:w-auto">
-          <TabsTrigger
-            value="unides"
-            className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Messages unitaires
-          </TabsTrigger>
-          <TabsTrigger
-            value="muldes"
-            className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Messages groupés
-          </TabsTrigger>
-          <TabsTrigger
-            value="muldesp"
-            className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Programmes
-          </TabsTrigger>
-        </TabsList>
+        {/* === TABS === */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MessageType)} className="flex-1 flex flex-col min-h-0 mt-6">
+          <TabsList className="p-1 bg-muted/50 border rounded-lg w-full sm:w-auto">
+            <TabsTrigger value="unides">Unitaires</TabsTrigger>
+            <TabsTrigger value="muldes">Groupés</TabsTrigger>
+            <TabsTrigger value="muldesp">Programmés</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value={activeTab} className="mt-6 flex-1 flex flex-col">
-          <Card className="flex-1 flex flex-col">
-            <CardHeader className="border-b">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className="text-xl">
-                    {activeTab === 'unides' && 'Messages unitaires'}
-                    {activeTab === 'muldes' && 'Messages groupés'}
-                    {activeTab === 'muldesp' && 'Messages programmés'}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {activeTab === 'unides' && 'Historique des messages envoyés individuellement'}
-                    {activeTab === 'muldes' && 'Historique des messages envoyés en groupe'}
-                    {activeTab === 'muldesp' && 'Historique des messages programmés'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select 
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="">Tous les statuts</option>
-                    <option value="EN_ATTENTE">En attente</option>
-                    <option value="EN_COURS">En cours</option>
-                    <option value="TERMINE">Terminé</option>
-                    <option value="ERREUR">Erreur</option>
-                    <option value="ANNULE">Annulé</option>
-                  </select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0 flex-1 flex flex-col">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="text-red-500 text-center py-8">{error}</div>
-              ) : (
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  <div className="rounded-md border flex-1 overflow-hidden">
-                    <div className="overflow-auto h-full">
-                      <Table className="min-w-full">
-                        <TableHeader className="bg-muted/50 sticky top-0">
-                          <TableRow className="hover:bg-muted/60 transition-colors">
-                            <TableHead className="font-semibold text-foreground">Référence</TableHead>
-                            <TableHead className="font-semibold text-foreground">Message</TableHead>
-                            <TableHead className="font-semibold text-foreground">Destinataire(s)</TableHead>
-                            <TableHead className="font-semibold text-foreground">Émetteur</TableHead>
-                            <TableHead className="font-semibold text-foreground">Statut</TableHead>
-                            <TableHead className="font-semibold text-foreground">Date</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {displayedMessages.length > 0 ? (
-                            displayedMessages.map((message) => (
-                              <TableRow 
-                                key={message.ref} 
-                                className="group hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors duration-200 border-b border-border/50 last:border-0"
-                              >
-                                <TableCell className="font-medium p-3">
-                                  <div className="flex items-center gap-2">
-                                    {message.type === 'MULDES' || message.type === 'MULDESP' ? (
-                                      <Users className="h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                    {message.ref}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="p-3">
-                                  <div className="space-y-1 max-w-[300px]">
-                                    <div className="break-words whitespace-normal overflow-hidden text-ellipsis">{message.corps}</div>
-                                    {(message.type === 'MULDESP' || message.type === 'MULDES') && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {message.dateDebutEnvoi && (
-                                          <div>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</div>
-                                        )}
-                                        {message.dateFinEnvoi && (
-                                          <div>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</div>
-                                        )}
-                                        {message.nbParJour && (
-                                          <div>{message.nbParJour} envoi(s) par jour</div>
-                                        )}
-                                        {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
-                                          <div>Intervalle: {message.intervalleMinutes} min</div>
-                                        )}
-                                        {(message.destinataires || message.Destinataires) && (
-                                          <div className="mt-1">
-                                            <Button 
-                                              variant="ghost" 
-                                              size="sm" 
-                                              className="h-6 text-xs p-0 text-muted-foreground hover:text-foreground"
-                                              onClick={() => handleShowAllRecipients(message)}
-                                            >
-                                              Voir les {message.destinataires?.length || message.Destinataires?.length} destinataires
-                                            </Button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  {message.type === 'MULDES' || message.type === 'MULDESP' ? (
-                                    <Badge variant="secondary" className="font-normal">
-                                      {(message.destinataires || message.Destinataires || []).length} destinataires
-                                    </Badge>
-                                  ) : (
-                                    <span className="font-medium">{message.destinataire}</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="p-3">{message.emetteur}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    {message.statut === 'ENVOYE' && (
-                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                    )}
-                                    {message.statut === 'EN_ATTENTE' && (
-                                      <Clock className="h-4 w-4 text-yellow-500" />
-                                    )}
-                                    {message.statut === 'ERREUR' && (
-                                      <XCircle className="h-4 w-4 text-red-500" />
-                                    )}
-                                    {message.statut}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex flex-col">
-                                    <span>{format(new Date(message.createdAt), 'PPpp', { locale: fr })}</span>
-                                    {message.type === 'MULDESP' && message.updatedAt && (
-                                      <span className="text-xs text-muted-foreground">
-                                        Modifié: {format(new Date(message.updatedAt), 'PPpp', { locale: fr })}
-                                      </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="p-3 text-right">
-                                  <div className="flex justify-end gap-1">
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <Info className="h-4 w-4" />
-                                            <span className="sr-only">Détails</span>
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs">
-                                          <div className="space-y-2">
-                                            <p className="font-medium">Détails du message</p>
-                                            <div className="space-y-1">
-                                              <p><span className="font-medium">Référence :</span> {message.ref}</p>
-                                              <p><span className="font-medium">Type :</span> {message.type}</p>
-                                              <p><span className="font-medium">Statut :</span> {message.statut}</p>
-                                              {message.type === 'MULDESP' && (
-                                                <div className="space-y-1 mt-2">
-                                                  <p className="font-medium">Programmation :</p>
-                                                  <ul className="list-disc pl-4 space-y-1">
-                                                    {message.dateDebutEnvoi && (
-                                                      <li>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</li>
-                                                    )}
-                                                    {message.dateFinEnvoi && (
-                                                      <li>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</li>
-                                                    )}
-                                                    {message.nbParJour && (
-                                                      <li>{message.nbParJour} envoi(s) par jour</li>
-                                                    )}
-                                                    {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
-                                                      <li>Intervalle: {message.intervalleMinutes} min</li>
-                                                    )}
-                                                  </ul>
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="mt-2">
-                                              <p className="font-medium">Destinataires :</p>
-                                              <ul className="max-h-40 overflow-y-auto mt-1 border rounded-md p-2 space-y-1">
-                                                {(message.destinataires || message.Destinataires || message.recipients || []).map((recipient: string, index: number) => (
-                                                  <li key={index} className="text-sm py-1 border-b last:border-0 last:pb-0 first:pt-0">
-                                                    {recipient}
-                                                  </li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                          </div>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                                            onClick={() => handleDeleteClick(message.ref)}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Supprimer</span>
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Supprimer ce message</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
+          <TabsContent value={activeTab} className="flex-1 flex flex-col min-h-0 mt-4">
+            <Card className="flex-1 flex flex-col">
+              <CardHeader className="border-b flex-shrink-0">
+                <CardTitle className="text-xl">Liste des messages</CardTitle>
+              </CardHeader>
+
+              <CardContent className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden">
+                {isLoading ? (
+                    <div className="flex justify-center items-center flex-1">
+                      <div className="animate-spin h-8 w-8 border-b-2 border-primary rounded-full" />
+                    </div>
+                ) : error ? (
+                    <div className="text-red-500 text-center py-6">{error}</div>
+                ) : (
+                    <>
+                      {/* === TABLE === */}
+                      <div className="flex-1 overflow-y-auto">
+                        <Table className="min-w-full border-collapse">
+                          <TableHeader className="bg-muted/50 sticky top-0 z-10">
                             <TableRow>
-                              <TableCell colSpan={7} className="p-4 text-center">
-                                Aucun message trouvé
-                              </TableCell>
+                              <TableHead>Référence</TableHead>
+                              <TableHead>Message</TableHead>
+                              <TableHead>Destinataire(s)</TableHead>
+                              <TableHead>Émetteur</TableHead>
+                              <TableHead>Statut</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead></TableHead>
                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+                          </TableHeader>
 
-                  {/* Pagination */}
-                  {isClient && totalItems > 0 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Afficher</span>
-                        <select
-                          value={pageSize}
-                          onChange={handlePageSizeChange}
-                          className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
-                        >
-                          {[5, 10, 20, 50, 100].map(size => (
-                            <option key={size} value={size}>
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                        <span>éléments par page</span>
+                          <TableBody>
+                            {displayedMessages.length ? (
+                                displayedMessages.map((m) => (
+                                    <TableRow key={m.ref}>
+                                      <TableCell className="font-medium flex items-center gap-2">
+                                        {m.type === 'MULDES' ? <Users className="h-4 w-4 text-muted-foreground" /> : <MessageSquare className="h-4 w-4 text-muted-foreground" />}
+                                        {m.ref}
+                                      </TableCell>
+                                      <TableCell className="max-w-[280px] break-words">{m.corps}</TableCell>
+                                      <TableCell>
+                                        {m.destinataire || (
+                                            <Button variant="ghost" size="sm" className="text-xs p-0 hover:text-primary hover:cursor-pointer transition-colors" onClick={() => handleShowAllRecipients(m)}>
+                                              Voir les {m.destinataires?.length || m.Destinataires?.length} destinataires
+                                            </Button>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>{m.emetteur}</TableCell>
+                                      <TableCell>
+                                        {m.statut === 'ENVOYE' && <CheckCircle2 className="inline h-4 w-4 text-green-500 mr-1" />}
+                                        {m.statut === 'EN_ATTENTE' && <Clock className="inline h-4 w-4 text-yellow-500 mr-1" />}
+                                        {m.statut === 'ERREUR' && <XCircle className="inline h-4 w-4 text-red-500 mr-1" />}
+                                        {m.statut}
+                                      </TableCell>
+                                      <TableCell>{format(new Date(m.createdAt), 'Pp', { locale: fr })}</TableCell>
+                                      <TableCell className="text-right">
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button variant="ghost" size="icon">
+                                                <Info className="h-4 w-4" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-md p-4">
+                                              <div className="space-y-3">
+                                                <div className="text-sm">
+                                                  <p className="text-muted-foreground">
+                                                    Créé le {format(new Date(m.createdAt), 'Pp', { locale: fr })}
+                                                  </p>
+                                                </div>
+
+                                                {/* Détails de programmation */}
+                                                {(m.type === 'MULDESP' || m.dateDebutEnvoi) && (
+                                                  <div className="pt-2">
+                                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                                      {m.dateDebutEnvoi && (
+                                                        <div className="space-y-1">
+                                                          <p className="font-medium">Date de début:</p>
+                                                          <p className="text-muted-foreground">
+                                                            {format(new Date(m.dateDebutEnvoi), 'P', { locale: fr })}
+                                                          </p>
+                                                        </div>
+                                                      )}
+                                                      {m.dateFinEnvoi && (
+                                                        <div className="space-y-1">
+                                                          <p className="font-medium">Date de fin:</p>
+                                                          <p className="text-muted-foreground">
+                                                            {format(new Date(m.dateFinEnvoi), 'P', { locale: fr })}
+                                                          </p>
+                                                        </div>
+                                                      )}
+                                                      {m.nbParJour !== undefined && (
+                                                        <div className="space-y-1">
+                                                          <p className="font-medium">Envois par jour:</p>
+                                                          <p className="text-muted-foreground">
+                                                            {m.nbParJour}
+                                                          </p>
+                                                        </div>
+                                                      )}
+                                                      {m.intervalleMinutes !== undefined && (
+                                                        <div className="space-y-1">
+                                                          <p className="font-medium">Intervalle (min):</p>
+                                                          <p className="text-muted-foreground">
+                                                            {m.intervalleMinutes}
+                                                          </p>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(m.ref)} className="text-destructive hover:bg-destructive/10">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow><TableCell colSpan={7} className="text-center py-6">Aucun message trouvé</TableCell></TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {totalItems > 0 ? (page - 1) * pageSize + 1 : 0} -{' '}
-                          {Math.min(page * pageSize, totalItems)} sur {totalItems}
-                        </span>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage(1)}
-                          disabled={page === 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          <span className="sr-only">Première page</span>
-                          <ChevronsLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage(p => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          <span className="sr-only">Page précédente</span>
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                          disabled={page >= totalPages}
-                          className="h-8 w-8 p-0"
-                        >
-                          <span className="sr-only">Page suivante</span>
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage(totalPages)}
-                          disabled={page >= totalPages}
-                          className="h-8 w-8 p-0"
-                        >
-                          <span className="sr-only">Dernière page</span>
-                          <ChevronsRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
 
-      {/* Boîte de dialogue de suppression d'un message */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Supprimer le message</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce message ? Cette action est irréversible.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={isDeleting}
-            >
-              Annuler
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Suppression...' : 'Supprimer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                      {/* === PAGINATION === */}
+                      {isClient && totalItems > 0 && (
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>Afficher</span>
+                              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-8 w-16 border rounded-md bg-background px-2">
+                                {[5, 10, 20, 50].map(s => <option key={s}>{s}</option>)}
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className="h-4 w-4" /></Button>
+                              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                              <Button variant="outline" size="sm" onClick={() => setPage(totalPages)} disabled={page >= totalPages}><ChevronsRight className="h-4 w-4" /></Button>
+                            </div>
+                          </div>
+                      )}
+                    </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-      {/* Boîte de dialogue de suppression de tous les messages */}
-      <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Supprimer tous les messages</DialogTitle>
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-              <div>
-                <p>Êtes-vous certain de vouloir supprimer tous les messages ?</p>
-                <p className="font-medium mt-2">Cette action est irréversible et supprimera définitivement tous vos messages.</p>
-              </div>
-            </div>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteAllDialogOpen(false)}
-              disabled={isDeleting}
-            >
-              Annuler
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDeleteAll}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Suppression...' : 'Tout supprimer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* === Dialogues === */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Supprimer le message</DialogTitle></DialogHeader>
+            <DialogDescription>Cette action est irréversible.</DialogDescription>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Annuler</Button>
+              <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Boîte de dialogue pour afficher tous les destinataires */}
-      <Dialog open={showAllRecipients} onOpenChange={setShowAllRecipients}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Liste complète des destinataires</DialogTitle>
-            <DialogDescription>
-              {currentRecipients.length} destinataire{currentRecipients.length > 1 ? 's' : ''}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto pr-2">
-            <div className="space-y-2">
-              {currentRecipients.map((recipient, index) => (
-                <div key={index} className="p-2 rounded-md bg-muted/50 text-sm break-all">
-                  {recipient}
-                </div>
+        <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Supprimer tous les messages</DialogTitle></DialogHeader>
+            <DialogDescription>Confirmez la suppression complète de tous vos messages.</DialogDescription>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>Annuler</Button>
+              <Button variant="destructive" onClick={confirmDeleteAll} disabled={isDeleting}>
+                {isDeleting ? 'Suppression...' : 'Tout supprimer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAllRecipients} onOpenChange={setShowAllRecipients}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader><DialogTitle>Liste des destinataires</DialogTitle></DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+              {currentRecipients.map((r, i) => (
+                  <div key={i} className="p-2 bg-muted/50 rounded mb-1">{r}</div>
               ))}
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowAllRecipients(false)}
-            >
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter><Button variant="outline" onClick={() => setShowAllRecipients(false)}>Fermer</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
   );
 }
