@@ -78,8 +78,9 @@ export default function HistoriquePage() {
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [isClient, setIsClient] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [currentRecipients, setCurrentRecipients] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -212,7 +213,17 @@ export default function HistoriquePage() {
       }
       
       // Mettre à jour les états avec les données
-      const messages = data.data || [];
+      let messages = data.data || [];
+      
+      // Pour les messages groupés, formater les données pour une meilleure cohérence
+      if (activeTab === 'muldes') {
+        messages = messages.map(msg => ({
+          ...msg,
+          destinataires: msg.destinataires || msg.Destinataires || [],
+          type: 'MULDES' // S'assurer que le type est cohérent
+        }));
+      }
+      
       setAllMessages(messages);
       
       if (messages.length > 0) {
@@ -319,6 +330,11 @@ export default function HistoriquePage() {
     }
   }, [allMessages, searchQuery, statusFilter, page, pageSize]);
   
+  // Effet pour gérer le rendu côté client uniquement
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Charger les données au montage du composant et quand l'onglet change
   useEffect(() => {
     setPage(1);
@@ -330,6 +346,19 @@ export default function HistoriquePage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // La recherche est gérée par l'effet sur searchQuery
+    setPage(1); // Réinitialiser à la première page lors d'une nouvelle recherche
+  };
+
+  // Fonction pour changer le nombre d'éléments par page
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setPage(1); // Réinitialiser à la première page lors du changement de taille de page
+  };
+  
+  // Fonction pour gérer le changement d'onglet avec réinitialisation de la page
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as MessageType);
+    setPage(1);
   };
 
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -425,12 +454,10 @@ export default function HistoriquePage() {
       </div>
 
       <Tabs
-        defaultValue="unides"
-        onValueChange={(value) => {
-          setActiveTab(value as MessageType);
-          setPage(1);
-        }}
-        className="space-y-6 mt-8"
+        defaultValue="unides" 
+        className="w-full" 
+        onValueChange={handleTabChange}
+        value={activeTab}
       >
         <TabsList className="h-auto p-1 bg-muted/50 border rounded-lg w-full sm:w-auto">
           <TabsTrigger
@@ -501,7 +528,7 @@ export default function HistoriquePage() {
                     <div className="overflow-auto h-full">
                       <Table className="min-w-full">
                         <TableHeader className="bg-muted/50 sticky top-0">
-                          <TableRow className="hover:bg-transparent">
+                          <TableRow className="hover:bg-muted/60 transition-colors">
                             <TableHead className="font-semibold text-foreground">Référence</TableHead>
                             <TableHead className="font-semibold text-foreground">Message</TableHead>
                             <TableHead className="font-semibold text-foreground">Destinataire(s)</TableHead>
@@ -514,8 +541,11 @@ export default function HistoriquePage() {
                         <TableBody>
                           {displayedMessages.length > 0 ? (
                             displayedMessages.map((message) => (
-                              <TableRow key={message.ref} className="group hover:bg-muted/50 transition-colors">
-                                <TableCell className="font-medium">
+                              <TableRow 
+                                key={message.ref} 
+                                className="group hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors duration-200 border-b border-border/50 last:border-0"
+                              >
+                                <TableCell className="font-medium p-3">
                                   <div className="flex items-center gap-2">
                                     {message.type === 'MULDES' || message.type === 'MULDESP' ? (
                                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -525,16 +555,16 @@ export default function HistoriquePage() {
                                     {message.ref}
                                   </div>
                                 </TableCell>
-                                <TableCell className="whitespace-normal">
+                                <TableCell className="whitespace-normal p-3">
                                   <div className="space-y-1">
                                     <div>{message.corps}</div>
-                                    {message.type === 'MULDESP' && (
+                                    {(message.type === 'MULDESP' || message.type === 'MULDES') && (
                                       <div className="text-xs text-muted-foreground">
                                         {message.dateDebutEnvoi && (
-                                          <div>Début: {format(new Date(message.dateDebutEnvoi), 'PP', { locale: fr })}</div>
+                                          <div>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</div>
                                         )}
                                         {message.dateFinEnvoi && (
-                                          <div>Fin: {format(new Date(message.dateFinEnvoi), 'PP', { locale: fr })}</div>
+                                          <div>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</div>
                                         )}
                                         {message.nbParJour && (
                                           <div>{message.nbParJour} envoi(s) par jour</div>
@@ -542,25 +572,32 @@ export default function HistoriquePage() {
                                         {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
                                           <div>Intervalle: {message.intervalleMinutes} min</div>
                                         )}
+                                        {(message.destinataires || message.Destinataires) && (
+                                          <div className="mt-1">
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="h-6 text-xs p-0 text-muted-foreground hover:text-foreground"
+                                              onClick={() => handleShowAllRecipients(message)}
+                                            >
+                                              Voir les {message.destinataires?.length || message.Destinataires?.length} destinataires
+                                            </Button>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </div>
                                 </TableCell>
                                 <TableCell>
                                   {message.type === 'MULDES' || message.type === 'MULDESP' ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-auto p-0 text-left"
-                                      onClick={() => handleShowAllRecipients(message)}
-                                    >
+                                    <Badge variant="secondary" className="font-normal">
                                       {(message.destinataires || message.Destinataires || []).length} destinataires
-                                    </Button>
+                                    </Badge>
                                   ) : (
-                                    message.destinataire
+                                    <span className="font-medium">{message.destinataire}</span>
                                   )}
                                 </TableCell>
-                                <TableCell>{message.emetteur}</TableCell>
+                                <TableCell className="p-3">{message.emetteur}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1">
                                     {message.statut === 'ENVOYE' && (
@@ -585,62 +622,82 @@ export default function HistoriquePage() {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                          <Info className="h-4 w-4" />
-                                          <span className="sr-only">Détails</span>
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-xs">
-                                        <div className="space-y-2">
-                                          <p className="font-medium">Détails du message</p>
-                                          <div className="space-y-1">
-                                            <p><span className="font-medium">Référence :</span> {message.ref}</p>
-                                            <p><span className="font-medium">Type :</span> {message.type}</p>
-                                            <p><span className="font-medium">Statut :</span> {message.statut}</p>
-                                            {message.type === 'MULDESP' && (
-                                              <div className="space-y-1 mt-2">
-                                                <p className="font-medium">Programmation :</p>
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                  {message.dateDebutEnvoi && (
-                                                    <li>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</li>
-                                                  )}
-                                                  {message.dateFinEnvoi && (
-                                                    <li>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</li>
-                                                  )}
-                                                  {message.nbParJour && (
-                                                    <li>{message.nbParJour} envoi(s) par jour</li>
-                                                  )}
-                                                  {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
-                                                    <li>Intervalle: {message.intervalleMinutes} min</li>
-                                                  )}
-                                                </ul>
-                                              </div>
-                                            )}
+                                <TableCell className="p-3 text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Info className="h-4 w-4" />
+                                            <span className="sr-only">Détails</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-xs">
+                                          <div className="space-y-2">
+                                            <p className="font-medium">Détails du message</p>
+                                            <div className="space-y-1">
+                                              <p><span className="font-medium">Référence :</span> {message.ref}</p>
+                                              <p><span className="font-medium">Type :</span> {message.type}</p>
+                                              <p><span className="font-medium">Statut :</span> {message.statut}</p>
+                                              {message.type === 'MULDESP' && (
+                                                <div className="space-y-1 mt-2">
+                                                  <p className="font-medium">Programmation :</p>
+                                                  <ul className="list-disc pl-4 space-y-1">
+                                                    {message.dateDebutEnvoi && (
+                                                      <li>Début: {format(new Date(message.dateDebutEnvoi), 'PPpp', { locale: fr })}</li>
+                                                    )}
+                                                    {message.dateFinEnvoi && (
+                                                      <li>Fin: {format(new Date(message.dateFinEnvoi), 'PPpp', { locale: fr })}</li>
+                                                    )}
+                                                    {message.nbParJour && (
+                                                      <li>{message.nbParJour} envoi(s) par jour</li>
+                                                    )}
+                                                    {message.intervalleMinutes !== undefined && message.intervalleMinutes > 0 && (
+                                                      <li>Intervalle: {message.intervalleMinutes} min</li>
+                                                    )}
+                                                  </ul>
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="mt-2">
+                                              <p className="font-medium">Destinataires :</p>
+                                              <ul className="max-h-40 overflow-y-auto mt-1 border rounded-md p-2 space-y-1">
+                                                {(message.destinataires || message.Destinataires || message.recipients || []).map((recipient: string, index: number) => (
+                                                  <li key={index} className="text-sm py-1 border-b last:border-0 last:pb-0 first:pt-0">
+                                                    {recipient}
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
                                           </div>
-                                          <div className="mt-2">
-                                            <p className="font-medium">Destinataires :</p>
-                                            <ul className="max-h-40 overflow-y-auto mt-1 border rounded-md p-2 space-y-1">
-                                              {(message.destinataires || message.Destinataires || message.recipients || []).map((recipient: string, index: number) => (
-                                                <li key={index} className="text-sm py-1 border-b last:border-0 last:pb-0 first:pt-0">
-                                                  {recipient}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        </div>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                            onClick={() => handleDeleteClick(message.ref)}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Supprimer</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Supprimer ce message</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))
                           ) : (
                             <TableRow>
-                              <TableCell colSpan={7} className="text-center py-4">
+                              <TableCell colSpan={7} className="p-4 text-center">
                                 Aucun message trouvé
                               </TableCell>
                             </TableRow>
@@ -649,6 +706,75 @@ export default function HistoriquePage() {
                       </Table>
                     </div>
                   </div>
+
+                  {/* Pagination */}
+                  {isClient && totalItems > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Afficher</span>
+                        <select
+                          value={pageSize}
+                          onChange={handlePageSizeChange}
+                          className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        >
+                          {[5, 10, 20, 50, 100].map(size => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                        <span>éléments par page</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {totalItems > 0 ? (page - 1) * pageSize + 1 : 0} -{' '}
+                          {Math.min(page * pageSize, totalItems)} sur {totalItems}
+                        </span>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(1)}
+                          disabled={page === 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <span className="sr-only">Première page</span>
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <span className="sr-only">Page précédente</span>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={page >= totalPages}
+                          className="h-8 w-8 p-0"
+                        >
+                          <span className="sr-only">Page suivante</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage(totalPages)}
+                          disabled={page >= totalPages}
+                          className="h-8 w-8 p-0"
+                        >
+                          <span className="sr-only">Dernière page</span>
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

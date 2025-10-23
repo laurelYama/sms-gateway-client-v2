@@ -365,15 +365,24 @@ export function MessageSimpleForm() {
                         </div>
                     )}
 
-                    <div>
-                      <Label>Message</Label>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label>Message</Label>
+                        <span className={`text-xs ${message.length > 160 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                          {message.length}/160 caractères
+                        </span>
+                      </div>
                       <Textarea
                           placeholder="Saisissez votre message..."
                           value={message}
                           onChange={e => setMessage(e.target.value)}
-                          className="min-h-[120px]"
+                          className={`min-h-[120px] ${message.length > 160 ? 'border-destructive' : ''}`}
                       />
-                      <p className="text-sm text-muted-foreground">{message.length}/160 caractères</p>
+                      {message.length > 160 && (
+                        <p className="text-xs text-destructive">
+                          Le message dépasse la limite de 160 caractères
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex justify-end pt-4">

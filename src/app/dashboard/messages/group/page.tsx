@@ -300,6 +300,7 @@ export default function GroupMessagePage() {
                         <GroupContactsSelector 
                           onSelectContacts={handleSelectContacts}
                           selectedContacts={selectedContacts.map(c => c ? c.fullNumber : '').filter(Boolean)}
+                          allowMultipleSelection={true}
                         />
                       </div>
                     </div>
@@ -427,6 +428,7 @@ export default function GroupMessagePage() {
                 <GroupContactsSelector 
                   onSelectContacts={handleSelectContacts}
                   selectedContacts={selectedContacts.map(c => c.fullNumber)}
+                  allowMultipleSelection={true}
                 />
               </CardContent>
             </Card>

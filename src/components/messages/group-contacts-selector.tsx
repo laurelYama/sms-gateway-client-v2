@@ -21,9 +21,14 @@ type ContactSelection = string | ContactInfo;
 interface GroupContactsSelectorProps {
   onSelectContacts: (contacts: ContactSelection[]) => void;
   selectedContacts: string[];
+  allowMultipleSelection?: boolean;
 }
 
-export default function GroupContactsSelector({ onSelectContacts, selectedContacts }: GroupContactsSelectorProps) {
+export default function GroupContactsSelector({ 
+  onSelectContacts, 
+  selectedContacts, 
+  allowMultipleSelection = false 
+}: GroupContactsSelectorProps) {
   const [groups, setGroups] = useState<Groupe[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [groupContacts, setGroupContacts] = useState<Record<string, Array<{contactNumber: string, contactName: string}>>>({});
@@ -221,8 +226,27 @@ export default function GroupContactsSelector({ onSelectContacts, selectedContac
                 <div className="border-t bg-muted/20 p-2 space-y-1">
                   {groupContacts[group.idClientsGroups]?.length > 0 ? (
                     <>
-                      <div className="p-2">
+                      <div className="flex justify-between items-center p-2">
                         <span className="text-sm font-medium">Contacts du groupe</span>
+                        {allowMultipleSelection && groupContacts[group.idClientsGroups]?.length > 0 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleGroupSelection(group.idClientsGroups);
+                            }}
+                          >
+                            {groupContacts[group.idClientsGroups].every(contact => 
+                              selectedContacts.some(selected => 
+                                typeof selected === 'string' 
+                                  ? selected === contact.contactNumber 
+                                  : selected.number === contact.contactNumber
+                              )
+                            ) ? 'Tout désélectionner' : 'Tout sélectionner'}
+                          </Button>
+                        )}
                       </div>
                       {groupContacts[group.idClientsGroups].map((contact) => (
                         <div 

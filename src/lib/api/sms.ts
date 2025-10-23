@@ -549,9 +549,17 @@ export const fetchMessages = async (
   if (!user || !user.id) throw new Error('Utilisateur non connecté');
   
   // Construire l'URL en fonction du type de message
-  const endpoint = type === 'muldesp' 
-    ? `${API_BASE_URL}/api/V1/sms/client/${user.id}/muldesp/filter`
-    : `${API_BASE_URL}/api/V1/sms/client/${user.id}/${type}?page=${page}&pageSize=${pageSize}`;
+  let endpoint: string;
+  
+  if (type === 'muldesp') {
+    endpoint = `${API_BASE_URL}/api/V1/sms/client/${user.id}/muldesp/filter`;
+  } else if (type === 'muldes') {
+    // URL pour les messages groupés
+    endpoint = `https://api-smsgateway.solutech-one.com/api/V1/sms/muldes/${user.id}`;
+  } else {
+    // URL pour les messages simples (unides)
+    endpoint = `https://api-smsgateway.solutech-one.com/api/V1/sms/unides/${user.id}`;
+  }
 
   const response = await fetch(endpoint, {
     headers: {
@@ -584,8 +592,19 @@ export const fetchMessages = async (
     };
   }
   
-  // Si c'est une réponse paginée
-  if (data.data && Array.isArray(data.data)) {
+  // Si c'est une réponse paginée ou un tableau direct (cas des MULDESS et UNIDES)
+  if ((data.data && Array.isArray(data.data)) || (Array.isArray(data) && (type === 'muldes' || type === 'unides'))) {
+    // Pour les messages groupés, formater la réponse pour correspondre à l'interface attendue
+    const messages = Array.isArray(data) ? data : data.data;
+    const total = Array.isArray(data) ? data.length : data.total;
+    
+    return {
+      data: messages,
+      total: total || messages.length,
+      page: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil((total || messages.length) / pageSize)
+    };
     return {
       data: data.data,
       total: data.total || data.data.length,
@@ -595,12 +614,54 @@ export const fetchMessages = async (
     };
   }
   
-  // Si c'est un simple tableau
+  // Si c'est un autre format de réponse
   return {
-    data: Array.isArray(data) ? data : [],
-    total: Array.isArray(data) ? data.length : 0,
+    data: [],
+    total: 0,
     page,
     pageSize,
-    totalPages: Math.ceil((Array.isArray(data) ? data.length : 0) / pageSize)
+    totalPages: 0
   };
-};
+}
+
+/**
+ * Récupère les détails d'un message groupé spécifique
+ * @param messageRef La référence du message groupé (ex: 700003)
+ * @returns Promise<SmsMuldes> - Les détails du message groupé
+ */
+export const fetchGroupedMessageDetails = async (messageRef: string): Promise<SmsMuldes> => {
+  const token = getTokenFromCookies();
+  if (!token) throw new Error('Non authentifié');
+  
+  const response = await fetch(`https://api-smsgateway.solutech-one.com/api/V1/sms/muldes/${messageRef}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Échec de la récupération des détails du message groupé`
+    );
+  }
+
+  const data = await response.json();
+  
+  // Formater la réponse pour correspondre à l'interface SmsMuldes
+  return {
+    ref: data.ref || messageRef,
+    clientId: data.clientId || '',
+    emetteur: data.emetteur || '',
+    corps: data.corps || '',
+    type: 'MULDES',
+    statut: data.statut || 'INCONNU',
+    createdAt: data.createdAt || new Date().toISOString(),
+    destinataires: data.destinataires || [],
+    dateDebutEnvoi: data.dateDebutEnvoi,
+    dateFinEnvoi: data.dateFinEnvoi,
+    nbParJour: data.nbParJour,
+    intervalleMinutes: data.intervalleMinutes
+  };
+};;

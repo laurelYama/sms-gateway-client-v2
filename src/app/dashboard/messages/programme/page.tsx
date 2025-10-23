@@ -457,6 +457,7 @@ export default function ScheduledMessagePage() {
                     );
                     setSelectedContacts(contactNumbers);
                   }}
+                  allowMultipleSelection={true}
                 />
               </div>
             </Card>
