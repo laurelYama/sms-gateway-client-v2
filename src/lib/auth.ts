@@ -52,21 +52,30 @@ export function getUserFromCookies(): UserPayload | null {
 export function getTokenFromCookies(): string | undefined {
   try {
     if (typeof document === 'undefined') {
+      console.log('[getTokenFromCookies] Exécution côté serveur, impossible de récupérer le token');
       return undefined;
     }
 
     // Essayer de récupérer le token via js-cookie d'abord
     const clientToken = Cookies.get('authToken');
+    console.log('[getTokenFromCookies] Token récupéré via js-cookie:', clientToken ? 'présent' : 'absent');
+    
     if (clientToken) {
+      console.log('[getTokenFromCookies] Token trouvé via js-cookie');
       return clientToken;
     }
     
     // Vérifier dans document.cookie (pour les cas où le cookie est HTTP-Only)
+    console.log('[getTokenFromCookies] Vérification de document.cookie');
     const cookies = document.cookie.split(';');
+    console.log('[getTokenFromCookies] Cookies trouvés:', cookies);
+    
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'authToken' && value) {
-        return decodeURIComponent(value);
+      if (name.trim() === 'authToken' && value) {
+        console.log('[getTokenFromCookies] Token trouvé dans document.cookie');
+        // Ne pas décoder l'URL car le token n'est pas encodé
+        return value;
       }
     }
     

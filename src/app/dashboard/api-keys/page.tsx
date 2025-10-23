@@ -93,9 +93,13 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Gestion des clés API</h1>
+        <h1 className="text-3xl font-bold">Nos API d'envoi de SMS</h1>
         <p className="text-muted-foreground">
-          Gérez votre clé API pour accéder aux fonctionnalités avancées
+          Si vous souhaitez envoyer des SMS depuis votre système d'information.
+          Il vous suffit d'intégrer nos API dont les URL sont :
+          <br />
+          <br /><span className="text-primary">https://api.sms-gateway.com/api/V1/sms/unides</span>
+          <br /><span className="text-primary">https://api.sms-gateway.com/api/V1/sms/muldes</span>
         </p>
       </div>
 

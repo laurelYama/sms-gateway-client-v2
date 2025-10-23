@@ -49,15 +49,17 @@ export const getFacturesClient = async (): Promise<Facture[]> => {
 };
 
 export const getCalendrierFacturation = async (annee: number): Promise<CalendrierFacturation[]> => {
+  console.log('[getCalendrierFacturation] Début - année:', annee);
   const token = getTokenFromCookies();
   
   if (!token) {
-    console.error('Erreur d\'authentification: Aucun token trouvé');
+    console.error('[getCalendrierFacturation] Erreur d\'authentification: Aucun token trouvé');
     throw new Error('Non authentifié');
   }
 
   const url = `${API_URL}/billing/exercices/${annee}/calendrier`;
-  console.log('Envoi de la requête à:', url);
+  console.log('[getCalendrierFacturation] Envoi de la requête à:', url);
+  console.log('[getCalendrierFacturation] Token:', token ? 'présent' : 'absent');
 
   try {
     const response = await fetch(url, {

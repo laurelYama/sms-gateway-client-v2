@@ -126,10 +126,10 @@ const getNavItems = (user?: UserPayload | null): NavItem[] => {
   // Ajouter les éléments restants
   baseItems.push(
     {
-      name: 'Clé API',
+      name: 'Nos API d\'envoi de SMS',
       href: '/dashboard/api-keys',
       icon: Key,
-      description: 'Générer et gérer vos clés API',
+      description: 'Accédez à nos API pour l\'envoi de SMS',
     },
     {
       name: 'Tickets',

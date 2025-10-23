@@ -22,6 +22,8 @@ export default function FacturesPage() {
   const router = useRouter();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [triedYears, setTriedYears] = useState<number[]>([]);
+  const [isLoadingCalendrier, setIsLoadingCalendrier] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,12 +68,31 @@ export default function FacturesPage() {
   };
 
   const fetchCalendrier = async (year: number, isRetry: boolean = false) => {
+    console.log(`[fetchCalendrier] Début - année: ${year}, isRetry: ${isRetry}`);
+    
+    // Ne pas essayer de charger si on est déjà en train de charger le calendrier
+    if (isLoadingCalendrier) {
+      console.log('[fetchCalendrier] Chargement du calendrier déjà en cours, annulation de la requête');
+      return;
+    }
+    
+    // Vérifier si l'année a déjà été essayée
+    if (triedYears.includes(year)) {
+      console.log(`[fetchCalendrier] Année ${year} déjà essayée, annulation. Années essayées:`, triedYears);
+      return;
+    }
+    
+    // Marquer le chargement comme commencé
+    setIsLoadingCalendrier(true);
+    setLoading(true);
+    
     try {
-      // Ne pas essayer de charger si on est déjà en train de charger
-      if (loading) return;
+      // Ajouter l'année à la liste des années essayées
+      const newTriedYears = [...new Set([...triedYears, year])];
+      setTriedYears(newTriedYears);
+      console.log(`[fetchCalendrier] Nouvelles années essayées:`, newTriedYears);
       
-      setLoading(true);
-      console.log(`Récupération du calendrier pour l'année ${year}...`);
+      console.log(`[fetchCalendrier] Appel API pour l'année ${year}...`);
       
       const data = await getCalendrierFacturation(year);
       
@@ -81,9 +102,12 @@ export default function FacturesPage() {
         
         // Essayer l'année précédente si possible et si c'est la première tentative
         const currentYear = new Date().getFullYear();
-        if (!isRetry && year > currentYear - 5) {
-          console.log(`Tentative avec l'année précédente (${year - 1})...`);
-          setSelectedYear(year - 1);
+        const previousYear = year - 1;
+        
+        if (!isRetry && previousYear >= currentYear - 5) {
+          console.log(`Tentative avec l'année précédente (${previousYear})...`);
+          // Utiliser un setTimeout pour éviter les problèmes de boucle de rendu
+          setTimeout(() => setSelectedYear(previousYear), 0);
           return;
         }
         
@@ -102,34 +126,39 @@ export default function FacturesPage() {
       
     } catch (error: any) {
       console.error('Erreur lors de la récupération du calendrier:', error);
+      setCalendrier([]);
       
-      // Gestion des erreurs spécifiques
+      // Vérifier si l'utilisateur n'est pas authentifié
       if (error.status === 401) {
         router.push('/login');
         return;
-      } 
+      }
       
-      // Si c'est une erreur liée à une année non trouvée ou non ouverte
+      // Gestion spécifique des erreurs d'année non trouvée ou non ouverte
       if (error.status === 404 || error.code === 'YEAR_NOT_FOUND' || error.code === 'YEAR_NOT_OPEN') {
         const currentYear = new Date().getFullYear();
         
         // Essayer l'année précédente si possible et si c'est la première tentative
-        if (!isRetry && year > currentYear - 5) {
+        if (year > currentYear - 5 && !isRetry) {
           console.log(`Tentative avec l'année précédente (${year - 1}) suite à une erreur...`);
           setSelectedYear(year - 1);
           return;
         }
+        
+        if (!isRetry) {
+          toast.error(`Année ${year} non disponible. Affichage d'une année antérieure.`);
+        }
+      } else {
+        // Pour les autres erreurs, afficher un message générique
+        if (!isRetry) {
+          toast.error('Erreur lors du chargement du calendrier de facturation');
+        }
       }
       
-      // Si on arrive ici, c'est qu'aucune année valide n'a été trouvée
       setHasValidYear(false);
-      setCalendrier([]);
-      
-      // Ne pas afficher de message d'erreur si c'est une tentative de secours
-      if (!isRetry) {
-        toast.error('Aucun calendrier disponible');
-      }
     } finally {
+      console.log('[fetchCalendrier] Fin du chargement du calendrier');
+      setIsLoadingCalendrier(false);
       setLoading(false);
     }
   };
@@ -151,14 +180,22 @@ export default function FacturesPage() {
       if (!isMounted) return;
       
       try {
+        console.log('Début du chargement des données...');
         setLoading(true);
         
         // Charger d'abord les factures
+        console.log('Chargement des factures...');
         await fetchFactures();
         
         // Puis essayer de charger le calendrier
         if (isMounted) {
-          await fetchCalendrier(selectedYear, false);
+          console.log(`Tentative de chargement du calendrier pour l'année ${selectedYear}...`);
+          // Ne pas attendre la fin du chargement du calendrier
+          fetchCalendrier(selectedYear, false).catch(error => {
+            console.error('Erreur lors du chargement du calendrier:', error);
+            setLoading(false);
+            setIsLoadingCalendrier(false);
+          });
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
@@ -181,25 +218,32 @@ export default function FacturesPage() {
 
   // Afficher un message d'avertissement si nécessaire, mais continuer à afficher le contenu
   const WarningBanner = () => {
-    if (!hasValidYear && !loading) {
-      return (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-md">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.485 3.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 3.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                Aucun calendrier de facturation disponible pour l'année sélectionnée. Les données affichées peuvent être incomplètes.
-              </p>
-            </div>
+    // Vérifier s'il y a des données de calendrier pour l'année sélectionnée
+    const hasCalendarForYear = calendrier.some(item => 
+      new Date(item.dateFacture).getFullYear() === selectedYear
+    );
+
+    // Ne pas afficher le message si le chargement est en cours ou s'il y a des données de calendrier
+    if (loading || hasCalendarForYear) {
+      return null;
+    }
+
+    return (
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-md">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.485 3.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 3.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              Aucun calendrier de facturation disponible pour l'année {selectedYear}. Les données affichées peuvent être incomplètes.
+            </p>
           </div>
         </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   return (

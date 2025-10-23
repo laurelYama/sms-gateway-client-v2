@@ -74,7 +74,7 @@ export async function fetchTickets(clientId: string): Promise<Ticket[]> {
 }
 
 export async function createTicket(ticketData: CreateTicketData): Promise<Ticket> {
-  const token = Cookies.get('authToken');
+  const token = getTokenFromCookies();
   
   if (!token) {
     throw new Error('Aucun token d\'authentification trouvé');
