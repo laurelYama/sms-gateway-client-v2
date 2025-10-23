@@ -87,29 +87,83 @@ export default function HistoriquePage() {
 
   // Fonction pour supprimer un message
   const deleteMessage = async (ref: string) => {
-    const token = await getTokenFromCookies();
-    const user = await getUserFromCookies();
-    const clientId = user?.id; // Changé de clientId à id
+    let response: Response | null = null;
+    
+    try {
+      console.log('Tentative de suppression du message avec référence:', ref);
+      const token = await getTokenFromCookies();
+      if (!token) {
+        throw new Error('Aucun token d\'authentification trouvé');
+      }
+      
+      const user = await getUserFromCookies();
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+      
+      const clientId = user.id;
+      if (!clientId) {
+        throw new Error('ID client non trouvé dans les informations utilisateur');
+      }
 
-    if (!clientId) {
-      throw new Error('ID client non trouvé');
+      const apiUrl = `https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/ref/${ref}`;
+      console.log('URL de l\'API appelée:', apiUrl);
+
+      response = await fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important pour les cookies
+      });
+
+      const responseText = await response.text();
+      console.log('Réponse brute du serveur:', responseText);
+      
+      let responseData;
+      try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.warn('La réponse n\'est pas au format JSON:', responseText);
+        responseData = { message: responseText };
+      }
+
+      console.log('Réponse du serveur:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        data: responseData
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          responseData?.message || 
+          responseData?.error ||
+          `Erreur ${response.status}: ${response.statusText || 'Erreur inconnue'}`
+        );
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('Erreur dans deleteMessage:', {
+        error,
+        response: response ? {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url
+        } : 'Aucune réponse du serveur',
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error instanceof Error) {
+        throw error;
+      } else if (typeof error === 'string') {
+        throw new Error(error);
+      } else {
+        throw new Error('Une erreur inconnue est survenue lors de la suppression du message');
+      }
     }
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/sms/client/${clientId}/ref/${ref}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Détails de l\'erreur:', errorData);
-      throw new Error(errorData.message || 'Erreur lors de la suppression du message');
-    }
-
-    return response.json();
   };
 
   // Fonction pour supprimer tous les messages
@@ -122,7 +176,7 @@ export default function HistoriquePage() {
       throw new Error('ID client non trouvé');
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/sms/client/${clientId}/all`, {
+    const response = await fetch(`https://api-smsgateway.solutech-one.com/api/V1/sms/client/${clientId}/all`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -536,9 +590,9 @@ export default function HistoriquePage() {
                                     {message.ref}
                                   </div>
                                 </TableCell>
-                                <TableCell className="whitespace-normal p-3">
-                                  <div className="space-y-1">
-                                    <div>{message.corps}</div>
+                                <TableCell className="p-3">
+                                  <div className="space-y-1 max-w-[300px]">
+                                    <div className="break-words whitespace-normal overflow-hidden text-ellipsis">{message.corps}</div>
                                     {(message.type === 'MULDESP' || message.type === 'MULDES') && (
                                       <div className="text-xs text-muted-foreground">
                                         {message.dateDebutEnvoi && (
