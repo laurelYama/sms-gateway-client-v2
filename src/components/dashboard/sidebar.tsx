@@ -359,17 +359,18 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <div 
-      className="flex flex-col w-64 h-full border-r border-gray-200 bg-white m-0 p-0"
+      className="fixed left-0 top-0 bottom-0 w-64 border-r border-gray-200 bg-white flex flex-col z-10"
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
       {/* Logo */}
-      <div className="flex-shrink-0 flex items-center justify-center h-16 px-4 mt-2">
+      <div className="flex-shrink-0 flex items-center justify-center h-16 px-4 pt-2">
         <Image
           src="/Logo_ION-1-removebg-preview 1.png"
           alt="Logo"
           width={140}
           height={28}
+          className="object-contain"
           priority
         />
       </div>

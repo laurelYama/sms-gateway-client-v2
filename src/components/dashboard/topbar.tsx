@@ -15,23 +15,14 @@ interface TopbarProps {
 export function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
 
-  // Titre fixe pour la barre supérieure
+  // Titre pour la barre supérieure
   const pageTitle = 'SMS Gateway';
 
   return (
     <header className="bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden"
-            onClick={onMenuClick}
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <h1 className="ml-2 text-lg md:text-xl font-semibold text-gray-900">
+          <h1 className="text-xl font-semibold text-primary">
             {pageTitle}
           </h1>
         </div>
