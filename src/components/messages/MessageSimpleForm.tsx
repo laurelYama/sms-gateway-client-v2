@@ -314,25 +314,29 @@ export function MessageSimpleForm() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex gap-2">
-                            <div className="w-1/3">
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="w-full sm:w-auto sm:min-w-[180px]">
                               <Select 
                                 value={selectedCountry} 
                                 onValueChange={handleCountryChange}
                               >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pays" />
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Sélectionnez un pays" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-h-[300px] overflow-y-auto">
                                   {countries.map(c => (
-                                    <SelectItem key={c.keyValue} value={c.keyValue}>
+                                    <SelectItem 
+                                      key={c.keyValue} 
+                                      value={c.keyValue}
+                                      className="truncate"
+                                    >
                                       {c.value1} ({c.value2})
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <Input
                                 {...form.register('phone')}
                                 ref={phoneInputRef}
@@ -340,6 +344,7 @@ export function MessageSimpleForm() {
                                 value={localNumber}
                                 onChange={handlePhoneChange}
                                 placeholder="Numéro de téléphone"
+                                className="w-full"
                               />
                             </div>
                           </div>

@@ -147,20 +147,23 @@ export default function DashboardPage() {
 
     // Effet pour charger les données initiales et configurer le rafraîchissement automatique
   useEffect(() => {
-    // Fonction de rafraîchissement
-    const refreshData = async () => {
+    // Fonction de rafraîchissement complète
+    const refreshAllData = async () => {
       try {
-        await fetchDashboardData();
+        await Promise.all([
+          fetchDashboardData(),
+          fetchLastTicket()
+        ]);
       } catch (error) {
         console.error('Erreur lors du rafraîchissement des données:', error);
       }
     };
 
     // Chargement initial
-    refreshData();
+    refreshAllData();
     
     // Configuration du rafraîchissement automatique toutes les 5 minutes
-    const refreshInterval = setInterval(refreshData, 5 * 60 * 1000);
+    const refreshInterval = setInterval(refreshAllData, 5 * 60 * 1000);
     
     // Nettoyage de l'intervalle lors du démontage du composant
     return () => clearInterval(refreshInterval);

@@ -86,7 +86,7 @@ export default function GroupesPage() {
         if (!token) throw new Error('Token non trouvé');
         
         const response = await fetch(
-          API_ENDPOINTS.CONTACTS_BY_CLIENT(clientId),
+          API_ENDPOINTS.CONTACTS_BY_CLIENT(currentClientId),
           {
             headers: {
               'Authorization': `Bearer ${token}`,

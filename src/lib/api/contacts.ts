@@ -318,11 +318,9 @@ export async function countContactsInGroup(groupId: string): Promise<number> {
     const token = getTokenFromCookies();
     if (!token) throw new Error('Non authentifié');
     
-    const clientId = getClientId();
-    if (!clientId) throw new Error('ID client non trouvé');
-    
+    // Utiliser l'endpoint GROUP_CONTACTS qui est plus approprié
     const response = await fetch(
-      API_ENDPOINTS.CONTACTS_BY_GROUP(clientId, groupId),
+      `${API_BASE_URL}/api/V1/clientsGroups/${groupId}/contacts`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -332,16 +330,32 @@ export async function countContactsInGroup(groupId: string): Promise<number> {
     );
     
     if (!response.ok) {
-      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-    }
-    
-    const contacts = await response.json();
-    if (!Array.isArray(contacts)) {
-      console.error('La réponse de l\'API n\'est pas un tableau:', contacts);
+      console.error(`Erreur ${response.status} lors de la récupération des contacts:`, await response.text());
       return 0;
     }
-    console.log(`[DEBUG] ${contacts.length} contacts trouvés pour le groupe ${groupId}`);
-    return contacts.length;
+    
+    const data = await response.json();
+    
+    // Vérifier si la réponse est un tableau
+    if (Array.isArray(data)) {
+      console.log(`[DEBUG] ${data.length} contacts trouvés pour le groupe ${groupId}`);
+      return data.length;
+    }
+    
+    // Si la réponse est un objet avec une propriété data qui est un tableau
+    if (data && Array.isArray(data.data)) {
+      console.log(`[DEBUG] ${data.data.length} contacts trouvés pour le groupe ${groupId} (dans data.data)`);
+      return data.data.length;
+    }
+    
+    // Si la réponse contient un champ count
+    if (typeof data?.count === 'number') {
+      console.log(`[DEBUG] ${data.count} contacts trouvés pour le groupe ${groupId} (champ count)`);
+      return data.count;
+    }
+    
+    console.error('Format de réponse inattendu pour les contacts du groupe:', data);
+    return 0;
     
   } catch (error) {
     console.error('Erreur lors du comptage des contacts:', error);

@@ -211,7 +211,7 @@ export default function ApiKeysPage() {
                       return;
                     }
                     
-                    const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/documents/download/Documentation_SMS_Gateway.pdf', {
+                    const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/documents/download/Documentation_SMS_Gateway_V1(1).pdf', {
                       headers: {
                         'Authorization': `Bearer ${token}`,
                       },
