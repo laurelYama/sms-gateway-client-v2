@@ -244,7 +244,7 @@ export default function CommandesPage() {
   return (
     <div className="container mx-auto py-6 space-y-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Commandes des SMS</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Commande de SMS</h2>
         <p className="text-muted-foreground">
           Compte prépayé
         </p>

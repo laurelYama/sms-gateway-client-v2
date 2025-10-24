@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Loader2, X, Edit, Save, XCircle, AlertCircle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { fetchEmetteurs, createEmetteur, updateEmetteur, deleteEmetteur, type Emetteur } from '@/lib/api/emetteurs';
 import { getUserFromCookies } from '@/lib/auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -54,18 +54,18 @@ export default function EmetteurPage() {
           console.error('Erreur lors du chargement des émetteurs:', error);
           
           // Ne pas rediriger automatiquement, afficher un message d'erreur à la place
-          toast({
-            title: 'Erreur',
-            description: `Impossible de charger la liste des émetteurs: ${errorMessage}`,
-            variant: 'destructive',
+          toast.error(`Impossible de charger la liste des émetteurs: ${errorMessage}`, {
+            icon: <AlertCircle className="h-5 w-5 text-destructive" />,
+            sound: true,
+            duration: 5000,
           });
         }
       } catch (error) {
         console.error('Erreur inattendue:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur inattendue est survenue lors du chargement des émetteurs',
-          variant: 'destructive',
+        toast.error('Une erreur inattendue est survenue lors du chargement des émetteurs', {
+          icon: <AlertCircle className="h-5 w-5 text-destructive" />,
+          sound: true,
+          duration: 5000,
         });
       } finally {
         setLoading(false);
@@ -108,16 +108,15 @@ export default function EmetteurPage() {
       // Mettre à jour la liste des émetteurs
       setEmetteurs(emetteurs.filter(e => e.id !== emetteurToDelete));
       
-      toast({
-        title: 'Succès',
-        description: 'Émetteur supprimé avec succès',
+      toast.success('Émetteur supprimé avec succès', {
+        icon: <Trash2 className="h-5 w-5 text-green-500" />,
+        duration: 3000,
       });
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'émetteur:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer l\'émetteur',
-        variant: 'destructive',
+      toast.error('Impossible de supprimer l\'émetteur', {
+        icon: <XCircle className="h-5 w-5 text-destructive" />,
+        duration: 5000,
       });
     } finally {
       setIsDeleteDialogOpen(false);
@@ -133,19 +132,17 @@ export default function EmetteurPage() {
     
     // Validation du formulaire
     if (!nomTronque) {
-      toast({
-        title: 'Champ requis',
-        description: 'Veuillez saisir un nom d\'émetteur',
-        variant: 'destructive',
+      toast.error('Veuillez saisir un nom d\'émetteur', {
+        icon: <AlertCircle className="h-5 w-5 text-destructive" />,
+        duration: 3000,
       });
       return false;
     }
 
     if (nomTronque.length < 2) {
-      toast({
-        title: 'Nom trop court',
-        description: 'Le nom de l\'émetteur doit contenir au moins 2 caractères',
-        variant: 'destructive',
+      toast.error('Le nom de l\'émetteur doit contenir au moins 2 caractères', {
+        icon: <AlertCircle className="h-5 w-5 text-destructive" />,
+        duration: 3000,
       });
       return false;
     }
@@ -164,9 +161,9 @@ export default function EmetteurPage() {
           )
         );
         
-        toast({
-          title: 'Succès',
-          description: 'Émetteur mis à jour avec succès',
+        toast.success('Émetteur mis à jour avec succès', {
+          icon: <Save className="h-5 w-5 text-green-500" />,
+          duration: 3000,
         });
       } else {
         // Création d'un nouvel émetteur
@@ -177,10 +174,9 @@ export default function EmetteurPage() {
         
         if (!clientId) {
           console.error('Aucun clientId ou typeCompte trouvé pour l\'utilisateur connecté');
-          toast({
-            title: 'Erreur',
-            description: 'Impossible de récupérer les informations du client',
-            variant: 'destructive',
+          toast.error('Impossible de récupérer les informations du client', {
+            icon: <XCircle className="h-5 w-5 text-destructive" />,
+            duration: 5000,
           });
           return false;
         }
@@ -198,9 +194,9 @@ export default function EmetteurPage() {
         // Réinitialiser le champ de saisie
         setNewEmetteur('');
         
-        toast({
-          title: 'Succès',
-          description: 'Émetteur ajouté avec succès',
+        toast.success('Émetteur ajouté avec succès', {
+          icon: <Plus className="h-5 w-5 text-green-500" />,
+          duration: 3000,
         });
       }
       
@@ -213,10 +209,9 @@ export default function EmetteurPage() {
     } catch (error) {
       console.error('Erreur lors de l\'opération sur l\'émetteur:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
-      toast({
-        title: 'Erreur',
-        description: `Échec de l'opération: ${errorMessage}`,
-        variant: 'destructive',
+      toast.error(`Échec de l'opération: ${errorMessage}`, {
+        icon: <XCircle className="h-5 w-5 text-destructive" />,
+        duration: 5000,
       });
       return false;
     } finally {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { User, X, Send, RefreshCw, Users, XCircle } from 'lucide-react';
 import GroupContactsSelector from './group-contacts-selector';
@@ -14,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchCountryCodes } from '@/lib/api/countries';
 import { fetchEmetteurs } from '@/lib/api/emetteurs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Form } from '@/components/ui/form';
 
 interface ContactInfo {
@@ -42,6 +44,12 @@ interface FormValues {
 }
 
 export function MessageSimpleForm() {
+  const router = useRouter();
+  
+  const navigateToEmetteurs = () => {
+    router.push('/dashboard/emetteur');
+  };
+
   const form = useForm<FormValues>({
     defaultValues: {
       phone: '',
@@ -352,23 +360,48 @@ export function MessageSimpleForm() {
                       </div>
                     </div>
 
-                    {emetteurs.length > 0 && (
-                        <div>
-                          <Label>Émetteur</Label>
-                          <Select value={selectedEmetteur} onValueChange={setSelectedEmetteur}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choisir un émetteur" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {emetteurs.map(e => (
-                                  <SelectItem key={e.id} value={e.nom}>
-                                    {e.nom}
-                                  </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                    )}
+                    <div>
+                      <Label>Émetteur</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <Select 
+                                value={selectedEmetteur} 
+                                onValueChange={setSelectedEmetteur}
+                                disabled={emetteurs.length === 0}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choisir un émetteur" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {emetteurs.map(e => (
+                                    <SelectItem key={e.id} value={e.nom}>
+                                      {e.nom}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TooltipTrigger>
+                          {emetteurs.length === 0 && (
+                            <TooltipContent side="bottom">
+                              <button 
+                                onClick={navigateToEmetteurs}
+                                className="text-left hover:underline focus:outline-none"
+                              >
+                                Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                              </button>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                      {emetteurs.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Aucun émetteur disponible
+                        </p>
+                      )}
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">

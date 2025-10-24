@@ -14,6 +14,7 @@ import { fetchContacts } from '@/lib/api/contacts';
 import { fetchEmetteurs } from '@/lib/api/emetteurs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,6 +33,10 @@ export default function ScheduledMessagePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [emetteurs, setEmetteurs] = useState<Array<{id: string, nom: string}>>([]);
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
+  
+  const navigateToEmetteurs = () => {
+    router.push('/dashboard/emetteur');
+  };
   const [dateDebut, setDateDebut] = useState<Date | undefined>(new Date());
   const [dateFin, setDateFin] = useState<Date | undefined>(new Date());
   const [nbParJour, setNbParJour] = useState(1);
@@ -264,21 +269,45 @@ export default function ScheduledMessagePage() {
                       
                       <div className="mt-4">
                         <Label className="text-sm font-medium">Émetteur</Label>
-                        <Select
-                          value={selectedEmetteur}
-                          onValueChange={setSelectedEmetteur}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Sélectionnez un émetteur" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {emetteurs.map((emetteur) => (
-                              <SelectItem key={emetteur.id} value={emetteur.nom}>
-                                {emetteur.nom}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Select
+                                  value={selectedEmetteur}
+                                  onValueChange={setSelectedEmetteur}
+                                  disabled={emetteurs.length === 0}
+                                >
+                                  <SelectTrigger className="mt-1">
+                                    <SelectValue placeholder="Sélectionnez un émetteur" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {emetteurs.map((emetteur) => (
+                                      <SelectItem key={emetteur.id} value={emetteur.nom}>
+                                        {emetteur.nom}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </TooltipTrigger>
+                            {emetteurs.length === 0 && (
+                              <TooltipContent side="bottom">
+                                <button 
+                                  onClick={navigateToEmetteurs}
+                                  className="text-left hover:underline focus:outline-none"
+                                >
+                                  Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                                </button>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                        {emetteurs.length === 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Aucun émetteur disponible
+                          </p>
+                        )}
                       </div>
                     </div>
                     

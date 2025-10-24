@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { API_ENDPOINTS } from '@/config/api';
 import GroupContactsSelector from '@/components/messages/group-contacts-selector';
 import { fetchEmetteurs } from '@/lib/api/emetteurs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ContactInfo {
   number: string;
@@ -26,6 +27,10 @@ export default function GroupMessagePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [emetteurs, setEmetteurs] = useState<Array<{id: string, nom: string}>>([]);
+  
+  const navigateToEmetteurs = () => {
+    router.push('/dashboard/emetteur');
+  };
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
   const router = useRouter();
   
@@ -303,27 +308,42 @@ export default function GroupMessagePage() {
                         Émetteur
                       </Label>
                       <div className="flex items-center gap-2">
-                        <Select
-                          value={selectedEmetteur}
-                          onValueChange={setSelectedEmetteur}
-                          disabled={isLoading || emetteurs.length === 0}
-                        >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Sélectionner..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {emetteurs.map((emetteur) => (
-                              <SelectItem key={emetteur.id} value={emetteur.id} className="text-sm">
-                                {emetteur.nom}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {emetteurs.length === 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Aucun émetteur disponible
-                          </p>
-                        )}
+                        <TooltipProvider>
+                          <div className="flex items-center gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Select
+                                    value={selectedEmetteur}
+                                    onValueChange={setSelectedEmetteur}
+                                    disabled={isLoading || emetteurs.length === 0}
+                                  >
+                                    <SelectTrigger className="w-[200px]">
+                                      <SelectValue placeholder="Sélectionner..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {emetteurs.map((emetteur) => (
+                                        <SelectItem key={emetteur.id} value={emetteur.id} className="text-sm">
+                                          {emetteur.nom}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {emetteurs.length === 0 && (
+                                    <TooltipContent side="bottom">
+                                      <button 
+                                        onClick={navigateToEmetteurs}
+                                        className="text-left hover:underline focus:outline-none"
+                                      >
+                                        Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                                      </button>
+                                    </TooltipContent>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       </div>
                     </div>
 
