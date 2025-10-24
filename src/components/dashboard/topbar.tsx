@@ -3,10 +3,13 @@
 import { Menu, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { useClientInfo } from '@/hooks/useClientInfo';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 interface TopbarProps {
   onMenuClick?: () => void;
@@ -18,13 +21,43 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   // Titre pour la barre supérieure
   const pageTitle = 'SMS Gateway';
 
+  const { clientInfo, loading } = useClientInfo();
+
   return (
     <header className="bg-white shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
-        <div className="flex items-center">
+      <div className="flex items-start justify-between px-4 py-3 md:px-6 md:py-4">
+        <div>
           <h1 className="text-xl font-semibold text-primary">
             {pageTitle}
           </h1>
+          
+          <div className="flex items-center space-x-2 mt-1">
+            {loading ? (
+              <>
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-24" />
+              </>
+            ) : clientInfo ? (
+              <>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500">Ref. client:</span>
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {clientInfo.idclients}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center space-x-2 ml-2">
+                  <span className="text-xs text-gray-500">Type de compte:</span>
+                  <Badge 
+                    variant={clientInfo.typeCompte === 'PREPAYE' ? 'default' : 'secondary'}
+                    className="text-xs"
+                  >
+                    {clientInfo.typeCompte === 'PREPAYE' ? 'Prépayé' : 'Postpayé'}
+                  </Badge>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -57,17 +90,10 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                 window.URL.revokeObjectURL(url);
                 a.remove();
                 
-                toast({
-                  title: 'Téléchargement démarré',
-                  description: 'La documentation est en cours de téléchargement',
-                });
+                toast.success('La documentation est en cours de téléchargement');
               } catch (error) {
                 console.error('Erreur lors du téléchargement:', error);
-                toast({
-                  title: 'Erreur',
-                  description: 'Impossible de télécharger la documentation',
-                  variant: 'destructive',
-                });
+                toast.error('Impossible de télécharger la documentation');
               }
             }}
             title="Télécharger la documentation"

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { useClientInfo } from "@/hooks/useClientInfo";
 import {
   eachDayOfInterval,
   format,
@@ -16,8 +17,10 @@ import {
   CheckCircle,
   CreditCard,
   AlertCircle,
-  Ticket as TicketIcon
+  Ticket as TicketIcon,
+  AlertTriangle
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetchLastClosedTicket, Ticket } from "@/lib/api/tickets";
@@ -47,6 +50,7 @@ export default function DashboardPage() {
   const [groupCount, setGroupCount] = useState<number | null>(null);
   const [contactCount, setContactCount] = useState<number | null>(null);
   const [soldeNet, setSoldeNet] = useState<number | null>(null);
+  const { clientInfo } = useClientInfo();
   const [ordersApproved, setOrdersApproved] = useState<number | null>(null);
   const [consumption, setConsumption] = useState<number | null>(null);
   const [period, setPeriod] = useState<"today" | "7d" | "month">("month");
@@ -263,14 +267,37 @@ export default function DashboardPage() {
       icon: UsersRound,
     },
     {
-      title: "Solde net (FCFA)",
+      title: "Solde net",
       value: loadingSms ? "..." : soldeNet?.toLocaleString() ?? "0",
       icon: CreditCard,
     },
   ];
 
+  // Vérifier si on doit afficher l'alerte solde insuffisant
+  const showLowBalanceAlert = useMemo(() => {
+    return clientInfo?.typeCompte === 'PREPAYE' && soldeNet !== null && soldeNet <= 0;
+  }, [clientInfo, soldeNet]);
+
   return (
     <div className="space-y-6">
+      {/* Alerte solde insuffisant */}
+      {showLowBalanceAlert && (
+        <Alert variant="destructive" className="border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            <p className="font-medium">Votre solde est épuisé</p>
+            <p>Vos messages ne seront pas envoyés tant que vous n'aurez pas rechargé votre compte.</p>
+            <Button 
+              variant="link" 
+              className="h-auto p-0 text-red-700 hover:text-red-800"
+              onClick={() => router.push('/dashboard/commandes')}
+            >
+              Commander des sms maintenant →
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
           Bienvenue sur votre tableau de bord

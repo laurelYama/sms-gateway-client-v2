@@ -27,7 +27,7 @@ export default function DashboardLayout({
             {!isMobile && <Sidebar />}
 
             {/* Contenu principal */}
-            <div className="flex-1 flex flex-col overflow-hidden md:ml-64 pt-16">
+            <div className="flex-1 flex flex-col overflow-hidden md:ml-64 pt-24 md:pt-20">
               {/* Contenu */}
               <main className="flex-1 overflow-y-auto p-4 pb-20 md:pb-6 md:px-6">
                 <div className="max-w-7xl mx-auto w-full">

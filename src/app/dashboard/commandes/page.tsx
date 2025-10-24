@@ -83,28 +83,58 @@ export default function CommandesPage() {
 
   // Charger l'historique des commandes
   useEffect(() => {
+    let isMounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 secondes entre les tentatives
+
     const loadHistory = async () => {      
+      if (!isMounted) return;
+      
       try {
         setIsLoadingHistory(true);
         const data = await getCreditHistory();
-        setHistory(data);
-        setTotalItems(data.length);
+        
+        if (isMounted) {
+          setHistory(data);
+          setTotalItems(data.length);
+          retryCount = 0; // Réinitialiser le compteur de tentatives en cas de succès
+        }
       } catch (error) {
         console.error('Erreur lors du chargement de l\'historique:', error);
-        toast.error('Erreur lors du chargement des commandes');
+        
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Nouvelle tentative dans ${retryDelay}ms (${retryCount}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          loadHistory(); // Nouvelle tentative
+        } else {
+          if (isMounted) {
+            toast.error('Erreur lors du chargement des commandes');
+          }
+        }
       } finally {
-        setIsLoadingHistory(false);
+        if (isMounted) {
+          setIsLoadingHistory(false);
+        }
       }
     };
 
     // Chargement initial
     loadHistory();
 
-    // Mise à jour automatique toutes les 30 secondes
-    const intervalId = setInterval(loadHistory, 30000);
+    // Mise à jour automatique toutes les 10 secondes (sans animation)
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadHistory();
+      }
+    }, 10000);
 
-    // Nettoyage de l'intervalle lors du démontage du composant
-    return () => clearInterval(intervalId);
+    // Nettoyage lors du démontage du composant
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [toast]);
   
   // Rafraîchir l'historique après une commande
@@ -175,11 +205,7 @@ export default function CommandesPage() {
 
   const handlePurchase = async () => {
     if (quantity < 1) {
-      toast({
-        title: 'Erreur',
-        description: 'La quantité doit être supérieure à 0',
-        variant: 'destructive',
-      });
+      toast.error('La quantité doit être supérieure à 0');
       return;
     }
 
@@ -200,10 +226,7 @@ export default function CommandesPage() {
         idempotencyKey: idempotencyKey
       });
       
-      toast({
-        title: 'Succès',
-        description: `Commande de ${quantity} crédit(s) effectuée avec succès`,
-      });
+      toast.success(`Commande de ${quantity} crédit(s) effectuée avec succès`);
       
       // Réinitialiser le formulaire et rafraîchir l'historique
       setQuantity(1);
@@ -212,11 +235,7 @@ export default function CommandesPage() {
     } catch (error) {
       console.error('Erreur lors de la commande:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
-      toast({
-        title: 'Erreur',
-        description: `Échec de la commande : ${errorMessage}`,
-        variant: 'destructive',
-      });
+      toast.error(`Échec de la commande : ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -240,7 +259,7 @@ export default function CommandesPage() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="quantity">Nombre de crédits</Label>
+                  <Label htmlFor="quantity">Nombre de SMS</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -413,23 +432,25 @@ export default function CommandesPage() {
                           )}
                         </div>
                       </div>
-                      <div className="mt-2 flex justify-between items-center">
+                      <div className="mt-2 flex justify-between items-start">
                         <div className="flex flex-col gap-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.status === 'PENDING' 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : item.status === 'APPROVED'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.status === 'PENDING' 
-                              ? 'En attente' 
-                              : item.status === 'APPROVED'
-                              ? 'Approuvé'
-                              : 'Rejeté'}
-                          </span>
+                          <div className="w-fit">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                              item.status === 'PENDING' 
+                                ? 'bg-yellow-100 text-yellow-800' 
+                                : item.status === 'APPROVED'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {item.status === 'PENDING' 
+                                ? 'En attente' 
+                                : item.status === 'APPROVED'
+                                ? 'Approuvé'
+                                : 'Rejeté'}
+                            </span>
+                          </div>
                           {item.status === 'REJECTED' && item.rejectReason && (
-                            <div className="text-xs text-red-600 mt-1">
+                            <div className="text-xs text-red-600 mt-1 max-w-xs break-words">
                               <span className="font-medium">Raison :</span> {item.rejectReason}
                             </div>
                           )}

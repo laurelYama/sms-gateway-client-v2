@@ -114,11 +114,11 @@ const getNavItems = (user?: UserPayload | null): NavItem[] => {
   // Ajouter l'élément de facturation si l'utilisateur est connecté
   if (user) {
     baseItems.push({
-      name: user.typeCompte === 'PREPAYE' ? 'Commander des crédits' : 'Mes factures',
+      name: user.typeCompte === 'PREPAYE' ? 'Commande de SMS' : 'Mes factures',
       href: user.typeCompte === 'PREPAYE' ? '/dashboard/commandes' : '/dashboard/factures',
       icon: user.typeCompte === 'PREPAYE' ? CreditCard : FileText,
       description: user.typeCompte === 'PREPAYE' 
-        ? 'Acheter des crédits SMS' 
+        ? 'Acheter des SMS' 
         : 'Consulter et télécharger vos factures'
     });
   }
@@ -126,10 +126,10 @@ const getNavItems = (user?: UserPayload | null): NavItem[] => {
   // Ajouter les éléments restants
   baseItems.push(
     {
-      name: 'Nos API d\'envoi de SMS',
+      name: 'API d\'envoi de SMS',
       href: '/dashboard/api-keys',
       icon: Key,
-      description: 'Accédez à nos API pour l\'envoi de SMS',
+      description: 'Accédez aux API pour l\'envoi de SMS',
     },
     {
       name: 'Tickets',

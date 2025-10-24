@@ -55,6 +55,8 @@ export function getTokenFromCookies(): string | undefined {
       console.log('[getTokenFromCookies] Exécution côté serveur, impossible de récupérer le token');
       return undefined;
     }
+    
+    console.log('[getTokenFromCookies] Document cookies:', document.cookie);
 
     // Essayer de récupérer le token via js-cookie d'abord
     const clientToken = Cookies.get('authToken');

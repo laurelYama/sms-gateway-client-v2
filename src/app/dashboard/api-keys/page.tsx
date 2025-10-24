@@ -93,7 +93,7 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Nos API d'envoi de SMS</h1>
+        <h1 className="text-3xl font-bold">API d'envoi de SMS</h1>
         <p className="text-muted-foreground">
           Si vous souhaitez envoyer des SMS depuis votre système d'information.
           Il vous suffit d'intégrer nos API dont les URL sont :
