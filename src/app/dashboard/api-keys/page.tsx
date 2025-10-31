@@ -5,7 +5,7 @@ import type { ApiKeyData } from '@/lib/api/apiKeys';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, RefreshCw, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { Copy, RefreshCw, Check, Loader2, AlertTriangle, Key, FileText } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { fetchApiKey, regenerateApiKey } from '@/lib/api/apiKeys';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,16 @@ export default function ApiKeysPage() {
   const [copied, setCopied] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  const handleDownloadPDF = () => {
+    // Créer un lien temporaire pour le téléchargement
+    const link = document.createElement('a');
+    link.href = '/Documentation API SMS Gateway.pdf';
+    link.download = 'Documentation-API-SMS-Gateway.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Charger la clé API au montage du composant
   useEffect(() => {
     const loadApiKey = async () => {
@@ -27,8 +37,8 @@ export default function ApiKeysPage() {
       } catch (error) {
         console.error('Erreur lors du chargement de la clé API:', error);
         toast({
-          title: 'Erreur',
-          description: 'Impossible de charger la clé API',
+          title: 'Error',
+          description: 'No se pudo cargar la clave API',
           variant: 'destructive',
         });
       } finally {
@@ -51,14 +61,14 @@ export default function ApiKeysPage() {
       const data = await regenerateApiKey();
       setApiKeyData(data);
       toast({
-        title: 'Succès',
-        description: 'Nouvelle clé API générée avec succès',
+        title: 'Éxito',
+        description: 'Nueva clave API generada con éxito',
       });
     } catch (error) {
       console.error('Erreur lors de la régénération de la clé API:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de régénérer la clé API',
+        title: 'Error',
+        description: 'No se pudo regenerar la clave API',
         variant: 'destructive',
       });
     } finally {
@@ -76,15 +86,15 @@ export default function ApiKeysPage() {
       navigator.clipboard.writeText(apiKeyData.apiKey);
       setCopied(true);
       toast({
-        title: 'Copié !',
-        description: 'La clé API a été copiée dans le presse-papier',
+        title: '¡Copiado!',
+        description: 'La clave API se ha copiado al portapapeles',
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Erreur lors de la copie dans le presse-papier:', err);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de copier la clé dans le presse-papier. Veuillez copier manuellement.',
+        title: 'Error',
+        description: 'No se pudo copiar la clave al portapapeles. Por favor, cópiela manualmente.',
         variant: 'destructive',
       });
     }
@@ -93,10 +103,10 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">API d'envoi de SMS</h1>
+        <h1 className="text-3xl font-bold">API de envío de SMS</h1>
         <p className="text-muted-foreground">
-          Si vous souhaitez envoyer des SMS depuis votre système d'information.
-          Il vous suffit d'intégrer nos API dont les URL sont :
+          Si desea enviar SMS desde su sistema de información.
+          Solo tiene que integrar nuestras API cuyas URL son:
           <br />
           <br /><span className="text-primary">https://api.sms-gateway.com/api/V1/sms/unides</span>
           <br /><span className="text-primary">https://api.sms-gateway.com/api/V1/sms/muldes</span>
@@ -105,9 +115,12 @@ export default function ApiKeysPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Votre clé API</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Su clave API
+          </CardTitle>
           <CardDescription>
-            Utilisez cette clé pour vous authentifier auprès de notre API. Gardez-la secrète et ne la partagez pas.
+            Use esta clave para autenticarse ante nuestra API. Guárdela en secreto y no la comparta.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,20 +170,17 @@ export default function ApiKeysPage() {
               <div className="flex justify-end">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={handleRegenerateKey}
-                  disabled={regenerating || !apiKeyData}
+                  disabled={regenerating}
+                  className="gap-2"
                 >
                   {regenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Régénération...
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Régénérer la clé
-                    </>
+                    <RefreshCw className="h-4 w-4" />
                   )}
+                  Regenerar la clave
                 </Button>
               </div>
 
@@ -182,9 +192,9 @@ export default function ApiKeysPage() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="font-medium">Important</h3>
+                    <h3 className="font-medium">Importante</h3>
                     <div className="mt-2">
-                      <p>La régénération de votre clé API invalidera immédiatement l'ancienne clé. Assurez-vous de mettre à jour toutes vos applications utilisant cette clé.</p>
+                      <p>La regeneración de su clave API invalidará inmediatamente la clave anterior. Asegúrese de actualizar todas sus aplicaciones que utilicen esta clave.</p>
                     </div>
                   </div>
                 </div>
@@ -196,89 +206,44 @@ export default function ApiKeysPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Documentation de l'API</CardTitle>
+          <CardTitle>Documentación de la API</CardTitle>
+          <CardDescription>
+            "Para usar la API, incluya el siguiente encabezado de autorización en sus solicitudes:"
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="prose dark:prose-invert max-w-none">
-            <p>Pour utiliser l'API, incluez l'en-tête d'autorisation suivant dans vos requêtes :</p>
-            <pre className="bg-muted p-4 rounded-md overflow-x-auto">
-              <code>Authorization: Bearer {apiKeyData?.apiKey || 'VOTRE_CLE_API'}</code>
-            </pre>
-            <div className="mt-4 space-y-2">
-              <p>Consultez la documentation complète de l'API pour plus d'informations sur les points de terminaison disponibles.</p>
-              <button
-                onClick={async () => {
-                  try {
-                    const token = document.cookie.split('; ').find(row => row.startsWith('authToken='))?.split('=')[1];
-                    if (!token) {
-                      window.location.href = '/login';
-                      return;
-                    }
-                    
-                    const response = await fetch('https://api-smsgateway.solutech-one.com/api/V1/documents/download/Documentation_SMS_Gateway_V1(1).pdf', {
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                      },
-                    });
-                    
-                    if (!response.ok) throw new Error('Échec du téléchargement');
-                    
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'Documentation_SMS_Gateway.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    a.remove();
-                    
-                    toast({
-                      title: 'Téléchargement démarré',
-                      description: 'La documentation est en cours de téléchargement',
-                    });
-                  } catch (error) {
-                    console.error('Erreur lors du téléchargement:', error);
-                    toast({
-                      title: 'Erreur',
-                      description: 'Impossible de télécharger la documentation',
-                      variant: 'destructive',
-                    });
-                  }
-                }}
-                className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Télécharger la documentation complète (PDF)
-              </button>
-            </div>
+          <div className="bg-muted/50 p-4 rounded-md font-mono text-sm overflow-x-auto">
+            <code>Authorization: Bearer SU_CLAVE_API</code>
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Consulte la documentación completa de la API para más información sobre los puntos finales disponibles.
+          </p>
+          <Button 
+            className="mt-4" 
+            variant="outline"
+            onClick={handleDownloadPDF}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Descargar la documentación completa (PDF)
+          </Button>
         </CardContent>
       </Card>
 
       {/* Dialogue de confirmation de régénération */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              <span>Confirmer la régénération</span>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Importante
             </DialogTitle>
             <DialogDescription className="pt-2">
-              Êtes-vous sûr de vouloir générer une nouvelle clé API ?
+              La regeneración de su clave API invalidará inmediatamente la clave anterior. Asegúrese de actualizar todas sus aplicaciones que utilicen esta clave.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md text-yellow-800 dark:text-yellow-200 text-sm">
-            <p>Cette action est irréversible. L'ancienne clé API sera immédiatement invalidée.</p>
-            <p className="mt-2">Assurez-vous de mettre à jour toutes vos applications utilisant cette clé.</p>
-          </div>
-          
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={cancelRegenerate} disabled={regenerating}>
-              Annuler
+            <Button variant="outline" onClick={cancelRegenerate}>
+              Cancelar
             </Button>
             <Button 
               variant="destructive" 
@@ -291,7 +256,7 @@ export default function ApiKeysPage() {
                   En cours...
                 </>
               ) : (
-                'Générer une nouvelle clé'
+                'Regenerar clave'
               )}
             </Button>
           </DialogFooter>

@@ -54,7 +54,7 @@ export default function EmetteurPage() {
           console.error('Erreur lors du chargement des émetteurs:', error);
           
           // Ne pas rediriger automatiquement, afficher un message d'erreur à la place
-          toast.error(`Impossible de charger la liste des émetteurs: ${errorMessage}`, {
+          toast.error(`No se pudo cargar la lista de emisores: ${errorMessage}`, {
             icon: <AlertCircle className="h-5 w-5 text-destructive" />,
             sound: true,
             duration: 5000,
@@ -62,7 +62,7 @@ export default function EmetteurPage() {
         }
       } catch (error) {
         console.error('Erreur inattendue:', error);
-        toast.error('Une erreur inattendue est survenue lors du chargement des émetteurs', {
+        toast.error('Ocurrió un error inesperado al cargar los emisores', {
           icon: <AlertCircle className="h-5 w-5 text-destructive" />,
           sound: true,
           duration: 5000,
@@ -108,13 +108,13 @@ export default function EmetteurPage() {
       // Mettre à jour la liste des émetteurs
       setEmetteurs(emetteurs.filter(e => e.id !== emetteurToDelete));
       
-      toast.success('Émetteur supprimé avec succès', {
+      toast.success('Emisor eliminado con éxito', {
         icon: <Trash2 className="h-5 w-5 text-green-500" />,
         duration: 3000,
       });
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'émetteur:', error);
-      toast.error('Impossible de supprimer l\'émetteur', {
+      toast.error('No se pudo eliminar el emisor', {
         icon: <XCircle className="h-5 w-5 text-destructive" />,
         duration: 5000,
       });
@@ -132,7 +132,7 @@ export default function EmetteurPage() {
     
     // Validation du formulaire
     if (!nomTronque) {
-      toast.error('Veuillez saisir un nom d\'émetteur', {
+      toast.error('Por favor ingrese un nombre de emisor', {
         icon: <AlertCircle className="h-5 w-5 text-destructive" />,
         duration: 3000,
       });
@@ -140,7 +140,7 @@ export default function EmetteurPage() {
     }
 
     if (nomTronque.length < 2) {
-      toast.error('Le nom de l\'émetteur doit contenir au moins 2 caractères', {
+      toast.error('El nombre del emisor debe tener al menos 2 caracteres', {
         icon: <AlertCircle className="h-5 w-5 text-destructive" />,
         duration: 3000,
       });
@@ -161,7 +161,7 @@ export default function EmetteurPage() {
           )
         );
         
-        toast.success('Émetteur mis à jour avec succès', {
+        toast.success('Emisor actualizado con éxito', {
           icon: <Save className="h-5 w-5 text-green-500" />,
           duration: 3000,
         });
@@ -174,7 +174,7 @@ export default function EmetteurPage() {
         
         if (!clientId) {
           console.error('Aucun clientId ou typeCompte trouvé pour l\'utilisateur connecté');
-          toast.error('Impossible de récupérer les informations du client', {
+          toast.error('No se pudieron recuperar los datos del cliente', {
             icon: <XCircle className="h-5 w-5 text-destructive" />,
             duration: 5000,
           });
@@ -194,7 +194,7 @@ export default function EmetteurPage() {
         // Réinitialiser le champ de saisie
         setNewEmetteur('');
         
-        toast.success('Émetteur ajouté avec succès', {
+        toast.success('Emisor agregado con éxito', {
           icon: <Plus className="h-5 w-5 text-green-500" />,
           duration: 3000,
         });
@@ -209,7 +209,7 @@ export default function EmetteurPage() {
     } catch (error) {
       console.error('Erreur lors de l\'opération sur l\'émetteur:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
-      toast.error(`Échec de l'opération: ${errorMessage}`, {
+      toast.error(`Error en la operación: ${errorMessage}`, {
         icon: <XCircle className="h-5 w-5 text-destructive" />,
         duration: 5000,
       });
@@ -243,33 +243,27 @@ export default function EmetteurPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Mes émetteurs</h1>
+          <h1 className="text-3xl font-bold">Mis emisores</h1>
           <p className="text-muted-foreground">
-            Gérez les émetteurs autorisés pour l'envoi de SMS
+            Gestione los emisores autorizados para el envío de SMS
           </p>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Añadir un emisor
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-6">
-        {/* Bouton pour ouvrir la boîte de dialogue */}
-        <div className="flex justify-end">
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter un émetteur
-          </Button>
-        </div>
-
-        {/* Boîte de dialogue d'ajout */}
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{editingEmetteur ? 'Modifier l\'émetteur' : 'Ajouter un émetteur'}</DialogTitle>
-              <DialogDescription>
-                {editingEmetteur 
-                  ? 'Modifiez le nom de l\'émetteur' 
-                  : 'Entrez le nom du nouvel émetteur'}
-              </DialogDescription>
-            </DialogHeader>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingEmetteur ? 'Modificar el emisor' : 'Añadir un emisor'}</DialogTitle>
+            <DialogDescription>
+              {editingEmetteur 
+                ? 'Modifique el nombre del emisor' 
+                : 'Ingrese el nombre del nuevo emisor'}
+            </DialogDescription>
+          </DialogHeader>
             <form onSubmit={async (e) => {
       e.preventDefault();
       const shouldSubmit = await handleAddEmetteur(e);
@@ -279,7 +273,7 @@ export default function EmetteurPage() {
     }} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="emetteur" className="text-sm font-medium leading-none">
-                  Nom de l'émetteur
+                  Nombre del emisor
                 </label>
                 <Input
                   id="emetteur"
@@ -297,7 +291,7 @@ export default function EmetteurPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground">
-                  Le nom de l'émetteur ne peut pas dépasser 11 caractères
+                  El nombre del emisor no puede exceder los 11 caracteres
                 </p>
               </div>
               <DialogFooter>
@@ -307,11 +301,11 @@ export default function EmetteurPage() {
                   onClick={() => handleDialogOpenChange(false)}
                   disabled={adding}
                 >
-                  Annuler
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={adding}>
                   {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingEmetteur ? 'Enregistrer' : 'Ajouter'}
+                  {editingEmetteur ? 'Guardar' : 'Añadir'}
                 </Button>
               </DialogFooter>
             </form>
@@ -321,9 +315,9 @@ export default function EmetteurPage() {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Supprimer l'émetteur</DialogTitle>
+              <DialogTitle>Eliminar el emisor</DialogTitle>
               <DialogDescription>
-                Êtes-vous sûr de vouloir supprimer cet émetteur ? Cette action est irréversible.
+                ¿Está seguro de que desea eliminar este emisor? Esta acción es irreversible.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end space-x-2 pt-4">
@@ -332,7 +326,7 @@ export default function EmetteurPage() {
                 onClick={() => setIsDeleteDialogOpen(false)}
                 disabled={adding}
               >
-                Annuler
+                Cancelar
               </Button>
               <Button 
                 variant="destructive" 
@@ -344,7 +338,7 @@ export default function EmetteurPage() {
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
-                Supprimer
+                Eliminar
               </Button>
             </div>
           </DialogContent>
@@ -353,9 +347,9 @@ export default function EmetteurPage() {
         {/* Liste des émetteurs */}
         <Card>
           <CardHeader>
-            <CardTitle>Liste des émetteurs</CardTitle>
+            <CardTitle>Lista de emisores</CardTitle>
             <CardDescription>
-              {emetteurs.length} émetteur{emetteurs.length > 1 ? 's' : ''} enregistré{emetteurs.length > 1 ? 's' : ''}
+              {emetteurs.length} emisor{emetteurs.length > 1 ? 'es' : ''} registrado{emetteurs.length > 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -365,16 +359,16 @@ export default function EmetteurPage() {
               </div>
             ) : emetteurs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Aucun émetteur enregistré
+                Sin emisores registrados
               </div>
             ) : (
               <div className="border rounded-md">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Créé le</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Creado el</TableHead>
+                      <TableHead className="w-[100px]">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -409,6 +403,5 @@ export default function EmetteurPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

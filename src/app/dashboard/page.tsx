@@ -252,22 +252,22 @@ export default function DashboardPage() {
   // Statistiques du haut
   const stats = [
     {
-      title: "SMS envoyés ce mois",
+      title: "SMS enviados este mes",
       value: loadingSms ? "..." : smsCount ?? "0",
       icon: Send,
     },
     {
-      title: "Groupes",
+      title: "Grupos",
       value: loadingSms ? "..." : groupCount ?? "0",
       icon: Users,
     },
     {
-      title: "Contacts",
+      title: "Contactos",
       value: loadingSms ? "..." : contactCount ?? "0",
       icon: UsersRound,
     },
     {
-      title: "Solde net",
+      title: "Saldo neto",
       value: loadingSms ? "..." : soldeNet?.toLocaleString() ?? "0",
       icon: CreditCard,
     },
@@ -285,14 +285,14 @@ export default function DashboardPage() {
         <Alert variant="destructive" className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-700">
-            <p className="font-medium">Votre solde est épuisé</p>
-            <p>Vos messages ne seront pas envoyés tant que vous n'aurez pas rechargé votre compte.</p>
+            <p className="font-medium">Su saldo está agotado</p>
+            <p>Sus mensajes no se enviarán hasta que recargue su cuenta.</p>
             <Button 
               variant="link" 
               className="h-auto p-0 text-red-700 hover:text-red-800"
               onClick={() => router.push('/dashboard/commandes')}
             >
-              Commander des sms maintenant →
+              Comprar SMS ahora →
             </Button>
           </AlertDescription>
         </Alert>
@@ -300,10 +300,10 @@ export default function DashboardPage() {
 
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Bienvenue sur votre tableau de bord
+          Bienvenido a su panel de control
         </h2>
         <p className="text-muted-foreground">
-          Gérez vos messages, contacts et campagnes SMS en un seul endroit.
+          Gestione sus mensajes, contactos y campañas SMS en un solo lugar.
         </p>
       </div>
 
@@ -329,7 +329,7 @@ export default function DashboardPage() {
         {/* Graphique des SMS */}
         <Card className="lg:col-span-5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Statistiques des SMS</CardTitle>
+            <CardTitle className="text-sm font-medium">Estadísticas de SMS</CardTitle>
             <div className="flex space-x-2">
               <Button
                 size="sm"
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                 onClick={() => setPeriod("today")}
                 disabled={loadingStats}
               >
-                Aujourd'hui
+                Hoy
               </Button>
               <Button
                 size="sm"
@@ -353,7 +353,7 @@ export default function DashboardPage() {
                 onClick={() => setPeriod("month")}
                 disabled={loadingStats}
               >
-                Mois
+                Mes
               </Button>
             </div>
           </CardHeader>
@@ -376,12 +376,12 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 flex flex-col h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
-              <TicketIcon className="h-4 w-4 mr-2" /> Dernier ticket fermé
+              <TicketIcon className="h-4 w-4 mr-2" /> Último ticket cerrado
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col overflow-hidden">
             {loadingTicket ? (
-              <div className="text-center py-4">Chargement du dernier ticket...</div>
+              <div className="text-center py-4">Cargando último ticket...</div>
             ) : lastClosedTicket ? (
               <div className="space-y-3 flex flex-col h-full">
                 <div className="flex justify-between items-start">
@@ -398,18 +398,18 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-800">
-                    Fermé
+                    Cerrado
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground flex-1 flex flex-col overflow-hidden">
-                  <p className="font-medium mb-1">Votre demande :</p>
+                  <p className="font-medium mb-1">Su solicitud:</p>
                   <div className="bg-gray-50 p-2 rounded-md text-xs overflow-y-auto max-h-20 mb-2">
                     {lastClosedTicket.description}
                   </div>
                 </div>
                 {lastClosedTicket.reponseAdmin && (
                   <div className="text-xs flex-1 flex flex-col overflow-hidden">
-                    <p className="font-medium mb-1 text-green-700">Réponse :</p>
+                    <p className="font-medium mb-1 text-green-700">Respuesta:</p>
                     <div className="bg-green-50 border border-green-100 p-2 rounded-md text-green-800 overflow-y-auto max-h-32">
                       {lastClosedTicket.reponseAdmin}
                     </div>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
             ) : (
               <div className="text-center py-4 text-muted-foreground text-sm">
                 <AlertCircle className="h-4 w-4 mx-auto mb-1" />
-                <p>Aucun ticket fermé récemment</p>
+                <p>Ningún ticket cerrado recientemente</p>
               </div>
             )}
           </CardContent>

@@ -21,16 +21,16 @@ export function LogoutButton() {
         // Rediriger vers la page de connexion
         router.push('/login');
         router.refresh(); // Forcer le rafraîchissement pour mettre à jour l'interface
-        toast.success('Déconnexion réussie');
+        toast.success('Sesión cerrada correctamente');
       } else {
-        throw new Error('Échec de la déconnexion');
+        throw new Error('Error al cerrar sesión');
       }
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error('Error al cerrar sesión:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion",
+        title: "Error",
+        description: "Ocurrió un error al cerrar la sesión",
       });
     }
   };
@@ -41,7 +41,7 @@ export function LogoutButton() {
       onClick={handleLogout}
       className="text-red-600 hover:bg-red-50 hover:text-red-700"
     >
-      Déconnexion
+      Cerrar sesión
     </Button>
   );
 }

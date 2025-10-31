@@ -15,10 +15,10 @@ import { Groupe, createGroupe, updateGroupe, getGroupeById } from '@/lib/api/gro
 import { getUserFromCookies } from '@/lib/auth';
 
 const formSchema = z.object({
-  nomGroupe: z.string().min(1, 'Le nom est requis'),
+  nomGroupe: z.string().min(1, 'El nombre es obligatorio'),
   descriptionGroupe: z
     .string()
-    .max(50, 'La description ne doit pas dépasser 50 caractères')
+    .max(50, 'La descripción no debe exceder 50 caracteres')
     .optional(),
 });
 
@@ -59,7 +59,7 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
           });
         } catch (error) {
           console.error('Erreur lors du chargement du groupe:', error);
-          toast.error('Erreur lors du chargement du groupe');
+          toast.error('Error al cargar el grupo');
         }
       }
     };
@@ -81,10 +81,10 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
 
       if (groupeId) {
         await updateGroupe(groupeId, groupeData);
-        toast.success('Groupe mis à jour avec succès');
+        toast.success('Grupo actualizado correctamente');
       } else {
         await createGroupe(groupeData);
-        toast.success('Groupe créé avec succès');
+        toast.success('Grupo creado correctamente');
       }
 
       if (onSuccess) {
@@ -94,7 +94,7 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du groupe:', error);
-      toast.error('Erreur lors de la sauvegarde du groupe');
+      toast.error('Error al guardar el grupo');
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>{groupeId ? 'Modifier le groupe' : 'Nouveau groupe'}</CardTitle>
+          <CardTitle>{groupeId ? 'Editar grupo' : 'Nuevo grupo'}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -115,10 +115,10 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
                   name="nomGroupe"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom du groupe *</FormLabel>
+                      <FormLabel>Nombre del grupo *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Entrez le nom du groupe"
+                          placeholder="Ingrese el nombre del grupo"
                           disabled={loading}
                           {...field}
                         />
@@ -133,10 +133,10 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
                   name="descriptionGroupe"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Descripción</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Entrez une description (optionnel)"
+                          placeholder="Ingrese una descripción (opcional)"
                           disabled={loading}
                           className="min-h-[100px]"
                           {...field}
@@ -155,10 +155,10 @@ export function GroupeForm({ groupeId, onSuccess, onCancel }: GroupeFormProps) {
                   onClick={onCancel}
                   disabled={loading}
                 >
-                  Annuler
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {groupeId ? 'Mettre à jour' : 'Créer le groupe'}
+                  {groupeId ? 'Actualizar' : 'Crear grupo'}
                 </Button>
               </div>
             </form>

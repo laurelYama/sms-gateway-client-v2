@@ -41,7 +41,7 @@ export function ImportContactsDialog({
         const clientId = getClientId();
         if (!clientId) {
           console.error('ClientId non trouvé lors du chargement des groupes');
-          toast.error('Impossible de récupérer les groupes: client non identifié');
+          toast.error('No se pudieron recuperar los grupos: cliente no identificado');
           return;
         }
 
@@ -50,8 +50,8 @@ export function ImportContactsDialog({
         setGroups(mapped);
         if (mapped.length > 0) setSelectedGroupId(mapped[0].id);
       } catch (error) {
-        console.error('Erreur lors du chargement des groupes:', error);
-        toast.error('Erreur lors du chargement des groupes');
+        console.error('Error al cargar los grupos:', error);
+        toast.error('Error al cargar los grupos');
       }
     };
 
@@ -73,13 +73,13 @@ export function ImportContactsDialog({
     
     if (!file) {
       console.error('Aucun fichier sélectionné');
-      toast.error('Veuillez sélectionner un fichier');
+      toast.error('Por favor seleccione un archivo');
       return;
     }
 
     if (!selectedGroupId) {
       console.error('Aucun groupe sélectionné');
-      toast.error('Veuillez sélectionner un groupe');
+      toast.error('Por favor seleccione un grupo');
       return;
     }
 
@@ -101,12 +101,12 @@ export function ImportContactsDialog({
         const result = await importContactsXLSX(selectedGroupId, file);
         console.log('Résultat de importContactsXLSX:', result);
       } else {
-        const errorMsg = 'Format de fichier non supporté. Utilisez un fichier .csv ou .xlsx';
+        const errorMsg = 'Formato de archivo no soportado. Utilice un archivo .csv o .xlsx';
         console.error(errorMsg);
         throw new Error(errorMsg);
       }
 
-      toast.success('Contacts importés avec succès');
+      toast.success('Contactos importados con éxito');
       if (onSuccess) {
         console.log('Appel de onSuccess');
         onSuccess();
@@ -114,7 +114,7 @@ export function ImportContactsDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Erreur lors de l\'import des contacts:', error);
-      toast.error(error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'import');
+      toast.error(error instanceof Error ? error.message : 'Ocurrió un error durante la importación');
     } finally {
       setLoading(false);
     }
@@ -128,20 +128,20 @@ export function ImportContactsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Importer des contacts</DialogTitle>
+          <DialogTitle>Importar contactos</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Groupe de destination</Label>
+              <Label>Grupo de destino</Label>
               <Select 
                 value={selectedGroupId} 
                 onValueChange={setSelectedGroupId}
                 disabled={loading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un groupe" />
+                  <SelectValue placeholder="Seleccionar un grupo" />
                 </SelectTrigger>
                 <SelectContent>
                   {groups.map(group => (
@@ -154,7 +154,7 @@ export function ImportContactsDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="file">Fichier à importer</Label>
+              <Label htmlFor="file">Archivo a importar</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="file"
@@ -172,25 +172,25 @@ export function ImportContactsDialog({
                   disabled={loading}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {fileName || 'Sélectionner un fichier'}
+                  {fileName || 'Seleccionar archivo'}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Formats supportés: .csv, .xlsx
+                Formatos soportados: .csv, .xlsx
               </p>
             </div>
           </div>
 
           <div className="bg-muted p-4 rounded-md">
-            <h4 className="font-medium mb-2">Format du fichier attendu :</h4>
+            <h4 className="font-medium mb-2">Formato de archivo esperado:</h4>
             <div className="space-y-2 text-sm">
               <div className="flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                <span>CSV : name,number</span>
+                <span>CSV: nombre,número</span>
               </div>
               <div className="flex items-center">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-green-500" />
-                <span>XLSX : Colonnes "name" et "number"</span>
+                <span>XLSX: Columnas "name" y "number"</span>
               </div>
             </div>
           </div>
@@ -202,14 +202,19 @@ export function ImportContactsDialog({
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Annuler
+              Cancelar
             </Button>
             <Button 
               type="submit" 
               disabled={!file || loading}
+              className="min-w-24"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Importer
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importando...
+                </>
+              ) : 'Importar'}
             </Button>
           </DialogFooter>
         </form>

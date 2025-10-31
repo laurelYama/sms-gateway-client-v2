@@ -47,7 +47,7 @@ export default function GroupContactsSelector({
         const groupsData = await getGroupes(user.id);
         setGroups(groupsData);
       } catch (error) {
-        console.error('Erreur lors du chargement des groupes:', error);
+        console.error('Error al cargar los grupos:', error);
       } finally {
         setLoading(false);
       }
@@ -73,7 +73,7 @@ export default function GroupContactsSelector({
       }));
       setExpandedGroup(groupId);
     } catch (error) {
-      console.error('Erreur lors du chargement des contacts du groupe:', error);
+      console.error('Error al cargar los contactos del grupo:', error);
     }
   };
 
@@ -187,13 +187,13 @@ export default function GroupContactsSelector({
       <CardHeader className="p-3">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium">Sélectionner un groupe</h3>
+            <h3 className="text-base font-medium">Seleccionar un grupo</h3>
           </div>
           <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Rechercher un groupe..."
+            placeholder="Buscar un grupo..."
             className="pl-8"
             value={searchQuery}
             onChange={handleSearchChange}
@@ -204,7 +204,7 @@ export default function GroupContactsSelector({
       <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
         {filteredGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            {searchQuery ? 'Aucun groupe trouvé' : 'Aucun groupe disponible'}
+            {searchQuery ? 'No se encontraron grupos' : 'No hay grupos disponibles'}
           </p>
         ) : (
           filteredGroups.map((group) => (
@@ -227,7 +227,7 @@ export default function GroupContactsSelector({
                   {groupContacts[group.idClientsGroups]?.length > 0 ? (
                     <>
                       <div className="flex justify-between items-center p-2">
-                        <span className="text-sm font-medium">Contacts du groupe</span>
+                        <span className="text-sm font-medium">Contactos del grupo</span>
                         {allowMultipleSelection && groupContacts[group.idClientsGroups]?.length > 0 && (
                           <Button 
                             variant="ghost" 
@@ -244,7 +244,7 @@ export default function GroupContactsSelector({
                                   ? selected === contact.contactNumber 
                                   : selected.number === contact.contactNumber
                               )
-                            ) ? 'Tout désélectionner' : 'Tout sélectionner'}
+                            ) ? 'Deseleccionar todo' : 'Seleccionar todo'}
                           </Button>
                         )}
                       </div>
@@ -294,7 +294,7 @@ export default function GroupContactsSelector({
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground p-2 text-center">
-                      Aucun contact dans ce groupe
+                      No hay contactos en este grupo
                     </p>
                   )}
                 </div>

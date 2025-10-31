@@ -88,12 +88,12 @@ export function MoveContactDialog({
     try {
       setSubmitting(true);
       await moveContact(contact.id, selectedGroupId);
-      toast.success('Contact déplacé avec succès');
+      toast.success('Contacto movido correctamente');
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      console.error('Erreur lors du déplacement du contact:', error);
-      toast.error('Erreur lors du déplacement du contact');
+      console.error('Error al mover el contacto:', error);
+      toast.error('Error al mover el contacto');
     } finally {
       setSubmitting(false);
     }
@@ -105,26 +105,26 @@ export function MoveContactDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MoveIcon className="h-5 w-5" />
-            Déplacer le contact
+            Mover contacto
           </DialogTitle>
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
           {/* Section gauche : Informations du contact */}
           <div className="space-y-4 p-4 border rounded-lg">
-            <h3 className="font-medium text-lg">Informations du contact</h3>
+            <h3 className="font-medium text-lg">Información del contacto</h3>
             <div className="space-y-2">
               <div>
-                <p className="text-sm text-muted-foreground">Nom</p>
+                <p className="text-sm text-muted-foreground">Nombre</p>
                 <p className="font-medium">{contact.contactName}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Téléphone</p>
+                <p className="text-sm text-muted-foreground">Teléfono</p>
                 <p className="font-medium">{contact.contactNumber}</p>
               </div>
               {contact.groupName && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Groupe actuel</p>
+                  <p className="text-sm text-muted-foreground">Grupo actual</p>
                   <p className="font-medium">{contact.groupName}</p>
                 </div>
               )}
@@ -133,7 +133,7 @@ export function MoveContactDialog({
 
           {/* Section droite : Liste des groupes */}
           <div className="flex flex-col h-full">
-            <h3 className="font-medium text-lg mb-4">Sélectionner un groupe de destination</h3>
+            <h3 className="font-medium text-lg mb-4">Seleccionar grupo de destino</h3>
             
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -141,7 +141,7 @@ export function MoveContactDialog({
               </div>
             ) : groups.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-muted-foreground text-sm">Aucun groupe disponible</p>
+                <p className="text-muted-foreground text-sm">No hay grupos disponibles</p>
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[calc(100vh-300px)]">
@@ -166,7 +166,7 @@ export function MoveContactDialog({
                           <span className="font-medium">{group.nomGroupe}</span>
                           {isCurrent && (
                             <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
-                              Groupe actuel
+                              Grupo actual
                             </span>
                           )}
                         </div>
@@ -186,7 +186,7 @@ export function MoveContactDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
               >
-                Annuler
+                Cancelar
               </Button>
               <Button 
                 onClick={handleMoveContact}
@@ -195,10 +195,10 @@ export function MoveContactDialog({
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Déplacement...
+                    Moviendo...
                   </>
                 ) : (
-                  'Déplacer le contact'
+                  'Mover contacto'
                 )}
               </Button>
             </div>

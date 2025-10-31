@@ -145,10 +145,10 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Statistiques des SMS</CardTitle>
+          <CardTitle>Estadísticas de SMS</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center text-gray-500">
-          Aucune donnée à afficher pour la période sélectionnée
+          No hay datos para mostrar en el período seleccionado
         </CardContent>
       </Card>
     );

@@ -16,9 +16,9 @@ import { getGroupes } from '@/lib/api/groupes';
 import { fetchCountryCodes } from '@/lib/api/countries';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Le nom est requis'),
-  number: z.string().min(1, 'Le numéro est requis'),
-  groupId: z.string().min(1, 'Le groupe est requis')
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  number: z.string().min(1, 'El número es obligatorio'),
+  groupId: z.string().min(1, 'El grupo es obligatorio')
 });
 
 type ContactFormValues = z.infer<typeof formSchema>;
@@ -85,11 +85,11 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
         const user = getUserFromCookies();
         
         if (!user) {
-          throw new Error('Veuillez vous reconnecter');
+          throw new Error('Por favor, inicie sesión nuevamente');
         }
         
         if (!user.id) {
-          throw new Error('ID utilisateur non trouvé');
+          throw new Error('ID de usuario no encontrado');
         }
         
         const data = await getGroupes(user.id);
@@ -207,12 +207,12 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
       <DialogTrigger asChild>
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Ajouter un contact
+          Añadir contacto
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter un nouveau contact</DialogTitle>
+          <DialogTitle>Añadir nuevo contacto</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -222,10 +222,10 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nom du contact *</FormLabel>
+                    <FormLabel>Nombre del contacto *</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Entrez le nom du contact" 
+                        placeholder="Ingrese el nombre del contacto" 
                         {...field} 
                         disabled={loading} 
                       />
@@ -235,63 +235,65 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 )}
               />
               
-              <div className="flex gap-2">
-                <FormField
-                  name="countryCode"
-                  render={() => (
-                    <div className="w-1/3">
-                      <Select
-                        value={selectedCountry}
-                        onValueChange={(value) => {
-                          const country = countries.find(c => c.keyValue === value);
-                          if (country) {
-                            setSelectedCountry(value);
-                            setCountryCode(country.value2);
-                          }
-                        }}
-                        disabled={loading || countries.length === 0}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            countries.length === 0 ? 'Chargement...' : 'Sélectionnez un pays'
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countries.map((country) => (
-                            <SelectItem 
-                              key={country.keyValue} 
-                              value={country.keyValue}
-                            >
-                              {country.value1} ({country.value2})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="number"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Numéro de téléphone *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="6 12 34 56 78" 
-                          {...field} 
-                          disabled={loading}
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[^\d\s]/g, '');
-                            field.onChange(value);
+              <div className="space-y-2">
+                <FormLabel>Número de teléfono *</FormLabel>
+                <div className="flex gap-2 items-end">
+                  <FormField
+                    name="countryCode"
+                    render={() => (
+                      <div className="w-1/3">
+                        <Select
+                          value={selectedCountry}
+                          onValueChange={(value) => {
+                            const country = countries.find(c => c.keyValue === value);
+                            if (country) {
+                              setSelectedCountry(value);
+                              setCountryCode(country.value2);
+                            }
                           }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                          disabled={loading || countries.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={
+                              countries.length === 0 ? 'Cargando...' : 'País'
+                            } />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countries.map((country) => (
+                              <SelectItem 
+                                key={country.keyValue} 
+                                value={country.keyValue}
+                              >
+                                {country.value1} ({country.value2})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="number"
+                    render={({ field }) => (
+                      <FormItem className="flex-1 mb-0">
+                        <FormControl>
+                          <Input 
+                            placeholder="6 12 34 56 78" 
+                            {...field} 
+                            disabled={loading}
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^\d\s]/g, '');
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage className="mt-1" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               
               <FormField
@@ -299,7 +301,7 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 name="groupId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Groupe *</FormLabel>
+                    <FormLabel>Grupo *</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value || undefined}
@@ -309,8 +311,8 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                         <SelectTrigger>
                           <SelectValue placeholder={
                             loadingGroupes 
-                              ? 'Chargement des groupes...' 
-                              : 'Sélectionnez un groupe'
+                              ? 'Cargando grupos...' 
+                              : 'Seleccione un grupo'
                           } />
                         </SelectTrigger>
                       </FormControl>
@@ -326,14 +328,14 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                           ))
                         ) : (
                           <div className="py-2 px-3 text-sm text-muted-foreground">
-                            Aucun groupe disponible
+                            No hay grupos disponibles
                           </div>
                         )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                     {loadingGroupes && (
-                      <FormDescription>Chargement des groupes...</FormDescription>
+                      <FormDescription>Cargando grupos...</FormDescription>
                     )}
                   </FormItem>
                 )}
@@ -347,10 +349,10 @@ export function AddContactDialog({ groupId, onSuccess }: AddContactDialogProps) 
                 onClick={() => setOpen(false)}
                 disabled={loading}
               >
-                Annuler
+                Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Ajout en cours...' : 'Ajouter le contact'}
+                {loading ? 'Añadiendo...' : 'Añadir contacto'}
               </Button>
             </div>
           </form>

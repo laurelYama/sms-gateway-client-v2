@@ -167,7 +167,7 @@ export function MessageSimpleForm() {
       const user = getUserFromCookies();
       const token = getTokenFromCookies();
       if (!user?.id || !token) throw new Error('Non authentifié.');
-      if (!message.trim()) throw new Error('Le message ne peut pas être vide.');
+      if (!message.trim()) throw new Error('El mensaje no puede estar vacío.');
 
       // Récupérer le numéro saisi
       let phoneNumber = localNumber;
@@ -189,12 +189,12 @@ export function MessageSimpleForm() {
         
         // Vérification que le numéro n'est pas vide
         if (!cleanNumber || cleanNumber.length === 0) {
-          throw new Error('Le numéro de téléphone ne peut pas être vide.');
+          throw new Error('El número de teléfono no puede estar vacío.');
         }
         
         // Vérification du format du numéro (au moins 8 chiffres)
         if (cleanNumber.length < 8) {
-          throw new Error('Le numéro de téléphone doit contenir au moins 8 chiffres.');
+          throw new Error('El número de teléfono debe contener al menos 8 dígitos.');
         }
         
         // Récupérer l'indicatif du pays sélectionné
@@ -222,26 +222,26 @@ export function MessageSimpleForm() {
         body: JSON.stringify(body),
       });
 
-      let errorMessage = 'Une erreur est survenue lors de l\'envoi du message.';
+      let errorMessage = 'Se produjo un error al enviar el mensaje.';
       
       if (!res.ok) {
         try {
           const errorData = await res.json();
           if (res.status === 400 && errorData.message) {
-            errorMessage = `Erreur de validation : ${errorData.message}`;
+            errorMessage = `Error de validación : ${errorData.message}`;
           } else if (res.status === 400) {
-            errorMessage = 'Numéro de téléphone invalide. Veuillez vérifier le format et réessayer.';
+            errorMessage = 'Número de teléfono inválido. Por favor, verifique el formato y vuelva a intentarlo.';
           }
         } catch (e) {
           // En cas d'erreur de parsing de la réponse d'erreur
-          errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer.';
+          errorMessage = 'Error al comunicarse con el servidor. Por favor, vuelva a intentarlo.';
         }
         throw new Error(errorMessage);
       }
 
       const responseData = await res.json();
       
-      toast.success('Message envoyé avec succès');
+      toast.success('Mensaje enviado con éxito');
       
       // Réinitialisation du formulaire
       const defaultCountry = countries.find(c => c.value2.includes('240'))?.keyValue || '';
@@ -252,7 +252,7 @@ export function MessageSimpleForm() {
       setSelectedCountry(defaultCountry);
       setSelectedContact(null);
     } catch (err: any) {
-      toast.error(err.message || 'Une erreur est survenue lors de l\'envoi du message', {
+      toast.error(err.message || 'Se produjo un error al enviar el mensaje', {
         duration: 5000,
       });
     } finally {
@@ -277,9 +277,9 @@ export function MessageSimpleForm() {
           <Card className="flex-1">
             <CardHeader>
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-bold">Envoi de message simple</CardTitle>
+                <CardTitle className="text-2xl font-bold">Envío de mensaje simple</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Envoyez un message SMS à un destinataire en quelques clics
+                  Envíe un mensaje SMS a un destinatario en pocos clics
                 </p>
               </div>
             </CardHeader>
@@ -289,9 +289,9 @@ export function MessageSimpleForm() {
                   <div className="space-y-6 pt-2">
                     <div>
                       <div className="space-y-2">
-                        <Label>Destinataire</Label>
+                        <Label>Destinatario</Label>
                         <p className="text-xs text-muted-foreground">
-                          Saisissez le numéro avec l'indicatif pays ou sélectionnez un contact
+                          Introduzca el número con el código de país o seleccione un contacto
                         </p>
                       </div>
                       <div className="space-y-4">
@@ -329,7 +329,7 @@ export function MessageSimpleForm() {
                                 onValueChange={handleCountryChange}
                               >
                                 <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Sélectionnez un pays" />
+                                  <SelectValue placeholder="Seleccione un país" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-[300px] overflow-y-auto">
                                   {countries.map(c => (
@@ -351,7 +351,7 @@ export function MessageSimpleForm() {
                                 type="tel"
                                 value={localNumber}
                                 onChange={handlePhoneChange}
-                                placeholder="Numéro de téléphone"
+                                placeholder="Número de teléfono"
                                 className="w-full"
                               />
                             </div>
@@ -361,7 +361,7 @@ export function MessageSimpleForm() {
                     </div>
 
                     <div>
-                      <Label>Émetteur</Label>
+                      <Label>Emisor</Label>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -372,7 +372,7 @@ export function MessageSimpleForm() {
                                 disabled={emetteurs.length === 0}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Choisir un émetteur" />
+                                  <SelectValue placeholder="Elegir un emisor" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {emetteurs.map(e => (
@@ -390,7 +390,7 @@ export function MessageSimpleForm() {
                                 onClick={navigateToEmetteurs}
                                 className="text-left hover:underline focus:outline-none"
                               >
-                                Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                                No se encontró ningún emisor. Haga clic aquí para crear uno.
                               </button>
                             </TooltipContent>
                           )}
@@ -398,27 +398,27 @@ export function MessageSimpleForm() {
                       </TooltipProvider>
                       {emetteurs.length === 0 && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Aucun émetteur disponible
+                          No hay emisores disponibles
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <Label>Message</Label>
+                        <Label>Mensaje</Label>
                         <span className={`text-xs ${message.length > 160 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {message.length}/160 caractères
+                          {message.length}/160 caracteres • {Math.ceil(message.length / 160)} SMS
                         </span>
                       </div>
                       <Textarea
-                          placeholder="Saisissez votre message..."
+                          placeholder="Introduzca su mensaje..."
                           value={message}
                           onChange={e => setMessage(e.target.value)}
                           className={`min-h-[120px] ${message.length > 160 ? 'border-destructive' : ''}`}
                       />
                       {message.length > 160 && (
                         <p className="text-xs text-destructive">
-                          Le message dépasse la limite de 160 caractères
+                          El mensaje excede el límite de 160 caracteres
                         </p>
                       )}
                     </div>
@@ -428,12 +428,12 @@ export function MessageSimpleForm() {
                         {isLoading ? (
                             <>
                               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Envoi en cours...
+                              Envío en curso...
                             </>
                         ) : (
                             <>
                               <Send className="mr-2 h-4 w-4" />
-                              Envoyer le message
+                              Enviar el mensaje
                             </>
                         )}
                       </Button>
@@ -448,7 +448,7 @@ export function MessageSimpleForm() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" /> Contacts
+                  <Users className="h-5 w-5" /> Contactos
                 </CardTitle>
               </CardHeader>
               <CardContent>

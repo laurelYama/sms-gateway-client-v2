@@ -402,9 +402,9 @@ export function ProfileDialog({ open, onOpenChange, clientId }: ProfileDialogPro
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Type de compte</p>
+                  <p className="text-sm font-medium text-muted-foreground">Tipo de cuenta</p>
                   <Badge variant={userData.typeCompte === 'POSTPAYE' ? 'default' : 'secondary'} className="capitalize">
-                    {userData.typeCompte === 'POSTPAYE' ? 'Postpayé' : 'Prépayé'}
+                    {userData.typeCompte === 'POSTPAYE' ? 'Pago posterior' : 'Prepago'}
                   </Badge>
                 </div>
                 

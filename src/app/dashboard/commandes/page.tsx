@@ -110,7 +110,7 @@ export default function CommandesPage() {
           loadHistory(); // Nouvelle tentative
         } else {
           if (isMounted) {
-            toast.error('Erreur lors du chargement des commandes');
+            toast.error('Error al cargar los pedidos');
           }
         }
       } finally {
@@ -205,7 +205,7 @@ export default function CommandesPage() {
 
   const handlePurchase = async () => {
     if (quantity < 1) {
-      toast.error('La quantité doit être supérieure à 0');
+      toast.error('La cantidad debe ser mayor a 0');
       return;
     }
 
@@ -226,7 +226,7 @@ export default function CommandesPage() {
         idempotencyKey: idempotencyKey
       });
       
-      toast.success(`Commande de ${quantity} crédit(s) effectuée avec succès`);
+      toast.success(`Pedido de ${quantity} crédito(s) realizado con éxito`);
       
       // Réinitialiser le formulaire et rafraîchir l'historique
       setQuantity(1);
@@ -235,7 +235,7 @@ export default function CommandesPage() {
     } catch (error) {
       console.error('Erreur lors de la commande:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
-      toast.error(`Échec de la commande : ${errorMessage}`);
+      toast.error(`Error en el pedido: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

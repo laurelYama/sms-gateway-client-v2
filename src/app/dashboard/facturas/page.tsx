@@ -11,7 +11,7 @@ import { getFacturesClient, getCalendrierFacturation, downloadFacturePdf, type F
 import { getTokenFromCookies } from '@/lib/auth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { es } from 'date-fns/locale'; // Import du localisateur espagnol
 import { useRouter } from 'next/navigation';
 
 export default function FacturesPage() {
@@ -39,7 +39,7 @@ export default function FacturesPage() {
   }, [rowsPerPage]);
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
+    return format(new Date(dateString), 'dd MMMM yyyy', { locale: es });
   };
 
   const isCurrentMonth = (monthNumber: number) => {
@@ -49,7 +49,7 @@ export default function FacturesPage() {
 
   const fetchFactures = async () => {
     try {
-      console.log('Début du chargement des factures...');
+      console.log('Inicio de la carga de facturas...');
       setLoading(true);
       const data = await getFacturesClient();
 
@@ -59,8 +59,8 @@ export default function FacturesPage() {
 
       setFactures(facturesValides);
     } catch (error) {
-      console.error('Erreur lors de la récupération des factures:', error);
-      toast.error('Erreur lors du chargement des factures');
+      console.error('Error al recuperar las facturas:', error);
+      toast.error('Error al cargar las facturas');
       setFactures([]);
     } finally {
       setLoading(false);
@@ -97,7 +97,7 @@ export default function FacturesPage() {
       const data = await getCalendrierFacturation(year);
       
       if (!data || data.length === 0) {
-        console.log(`Aucune donnée de calendrier disponible pour l'année ${year}`);
+        console.log(`No hay datos de calendario disponibles para el año ${year}`);
         setCalendrier([]);
         
         // Essayer l'année précédente si possible et si c'est la première tentative
@@ -113,7 +113,7 @@ export default function FacturesPage() {
         
         // Si c'est une tentative de secours, ne pas afficher de message
         if (!isRetry) {
-          toast.error(`Aucun calendrier de facturation disponible pour l'année ${year}`);
+          toast.error(`No hay calendario de facturación disponible para el año ${year}`);
         }
         
         setHasValidYear(false);
@@ -146,12 +146,12 @@ export default function FacturesPage() {
         }
         
         if (!isRetry) {
-          toast.error(`Année ${year} non disponible. Affichage d'une année antérieure.`);
+          toast.error(`Año ${year} no disponible. Mostrando un año anterior.`);
         }
       } else {
         // Pour les autres erreurs, afficher un message générique
         if (!isRetry) {
-          toast.error('Erreur lors du chargement du calendrier de facturation');
+          toast.error('Error al cargar el calendario de facturación');
         }
       }
       
@@ -184,21 +184,21 @@ export default function FacturesPage() {
         setLoading(true);
         
         // Charger d'abord les factures
-        console.log('Chargement des factures...');
+        console.log('Cargando facturas...');
         await fetchFactures();
         
         // Puis essayer de charger le calendrier
         if (isMounted) {
-          console.log(`Tentative de chargement du calendrier pour l'année ${selectedYear}...`);
+          console.log(`Intentando cargar el calendario para el año ${selectedYear}...`);
           // Ne pas attendre la fin du chargement du calendrier
           fetchCalendrier(selectedYear, false).catch(error => {
-            console.error('Erreur lors du chargement du calendrier:', error);
+            console.error('Error al cargar el calendario:', error);
             setLoading(false);
             setIsLoadingCalendrier(false);
           });
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        console.error('Error al cargar los datos:', error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -238,7 +238,7 @@ export default function FacturesPage() {
           </div>
           <div className="ml-3">
             <p className="text-sm text-yellow-700">
-              Aucun calendrier de facturation disponible pour l'année {selectedYear}. Les données affichées peuvent être incomplètes.
+              Ningún calendario de facturación disponible para el año {selectedYear}. Los datos mostrados pueden estar incompletos.
             </p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function FacturesPage() {
       <WarningBanner />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center">
-          <h1 className="text-2xl sm:text-3xl font-bold">Mes factures</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Mis facturas</h1>
         </div>
           <div className="flex items-center space-x-4">
             {/* Bouton calendrier */}
@@ -259,33 +259,33 @@ export default function FacturesPage() {
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Afficher le calendrier
+                  Ver calendario
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[95vw] max-w-[98vw] h-[90vh] overflow-hidden p-0">
                 <DialogHeader>
                   <DialogTitle className="flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
-                    Calendrier de facturation {selectedYear}
+                    Calendario de facturación {selectedYear}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="p-6 h-[calc(90vh-100px)] overflow-auto">
                   {loading ? (
-                      <div className="text-center py-8">Chargement du calendrier...</div>
+                    <div className="text-center py-8">Cargando el calendario...</div>
                   ) : (
-                      <div className="w-full">
+                    <div className="w-full">
                         <div className="border rounded-lg overflow-hidden">
                           <Table className="w-full">
                             <TableHeader className="bg-muted/50">
                               <TableRow>
-                                <TableHead className="w-[220px] px-6 py-4 font-medium">Mois</TableHead>
-                                <TableHead className="px-6 py-4 font-medium">Période de consommation</TableHead>
-                                <TableHead className="w-[220px] px-6 py-4 font-medium">Date de génération</TableHead>
+                                <TableHead className="w-[220px] px-6 py-4 font-medium">Meses</TableHead>
+                                <TableHead className="px-6 py-4 font-medium">Período de consumo</TableHead>
+                                <TableHead className="w-[220px] px-6 py-4 font-medium">Fecha de emisión</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {calendrier.map((item) => {
-                                const mois = new Date(2000, item.mois - 1, 1).toLocaleString('fr-FR', { month: 'long' });
+                                const mois = new Date(2000, item.mois - 1, 1).toLocaleString('es-ES', { month: 'long' });
                                 return (
                                     <TableRow
                                         key={item.id}
@@ -293,10 +293,10 @@ export default function FacturesPage() {
                                     >
                                       <TableCell className="px-6 py-4">
                                         <div className="flex items-center">
-                                          <span className="capitalize font-medium">{mois}</span>
+                                          <span className="capitalize font-medium">{mois.charAt(0).toUpperCase() + mois.slice(1)}</span>
                                           {isCurrentMonth(item.mois) && (
                                               <span className="ml-3 px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
-                                        En cours
+                                        En curso
                                       </span>
                                           )}
                                         </div>
@@ -329,7 +329,7 @@ export default function FacturesPage() {
 
             {/* Sélection année */}
             <div className="flex items-center space-x-2">
-              <span>Année :</span>
+              <span>Año :</span>
               <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -351,24 +351,24 @@ export default function FacturesPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <FileText className="w-5 h-5 mr-2" />
-                Mes factures
+                Mis facturas
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                  <div className="text-center py-8">Chargement des factures...</div>
+                  <div className="text-center py-8">Cargando facturas...</div>
               ) : factures.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">Aucune facture disponible</div>
+                  <div className="text-center py-8 text-muted-foreground">No hay facturas disponibles</div>
               ) : (
                   <div className="border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Période</TableHead>
-                          <TableHead>Consommation SMS</TableHead>
-                          <TableHead>Prix unitaire</TableHead>
-                          <TableHead>Montant</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>Período</TableHead>
+                          <TableHead>Consumo de SMS</TableHead>
+                          <TableHead>Precio unitario</TableHead>
+                          <TableHead>Importe</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -389,7 +389,7 @@ export default function FacturesPage() {
                                           onClick={() => handleDownloadFacture(facture)}
                                       >
                                         <Download className="w-4 h-4 mr-2" />
-                                        Télécharger
+                                        Descargar
                                       </Button>
                                       <Button
                                           variant="outline"
@@ -414,15 +414,15 @@ export default function FacturesPage() {
                                             } catch (error) {
                                               console.error('Erreur lors de l\'ouverture de la facture:', error);
                                               toast({
-                                                title: 'Erreur',
-                                                description: 'Impossible d\'ouvrir la facture',
+                                                title: 'Error',
+                                                description: 'No se pudo abrir la factura',
                                                 variant: 'destructive',
                                               });
                                             }
                                           }}
                                       >
                                         <FileText className="w-4 h-4 mr-2" />
-                                        Voir
+                                        Ver
                                       </Button>
                                     </div>
                                   </TableCell>
@@ -431,7 +431,7 @@ export default function FacturesPage() {
                         ) : (
                             <TableRow>
                               <TableCell colSpan={5} className="text-center py-4">
-                                Aucune facture disponible
+                                No hay facturas disponibles
                               </TableCell>
                             </TableRow>
                         )}

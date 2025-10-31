@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { useClientInfo } from '@/hooks/useClientInfo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -40,19 +39,19 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             ) : clientInfo ? (
               <>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500">Ref. client:</span>
+                  <span className="text-xs text-gray-500">Ref. cliente:</span>
                   <Badge variant="outline" className="text-xs font-mono">
                     {clientInfo.idclients}
                   </Badge>
                 </div>
                 
                 <div className="flex items-center space-x-2 ml-2">
-                  <span className="text-xs text-gray-500">Type de compte:</span>
+                  <span className="text-xs text-gray-500">Tipo de cuenta:</span>
                   <Badge 
                     variant={clientInfo.typeCompte === 'PREPAYE' ? 'default' : 'secondary'}
                     className="text-xs"
                   >
-                    {clientInfo.typeCompte === 'PREPAYE' ? 'Prépayé' : 'Postpayé'}
+                    {clientInfo.typeCompte === 'PREPAYE' ? 'Prepago' : 'Pago posterior'}
                   </Badge>
                 </div>
               </>
@@ -78,7 +77,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                   },
                 });
                 
-                if (!response.ok) throw new Error('Échec du téléchargement');
+                if (!response.ok) throw new Error('Error en la descarga');
                 
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -90,19 +89,19 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                 window.URL.revokeObjectURL(url);
                 a.remove();
                 
-                toast.success('La documentation est en cours de téléchargement');
+                toast.success('La documentación se está descargando');
               } catch (error) {
                 console.error('Erreur lors du téléchargement:', error);
-                toast.error('Impossible de télécharger la documentation');
+                toast.error('No se pudo descargar la documentación');
               }
             }}
-            title="Télécharger la documentation"
+            title="Descargar documentación"
           >
             <Download className="h-5 w-5" />
           </Button>
           
           <div className="flex items-center space-x-4">
-            <LanguageSwitcher />
+            {/* Sélecteur de langue supprimé */}
           </div>
         </div>
       </div>

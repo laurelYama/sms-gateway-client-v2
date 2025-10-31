@@ -15,11 +15,11 @@ import { fetchCountryCodes } from '@/lib/api/countries';
 import { toast } from 'sonner';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Le nom est requis'),
-  countryCode: z.string().min(1, 'L\'indicatif est requis'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  countryCode: z.string().min(1, 'El código de país es obligatorio'),
   number: z.string()
-    .min(1, 'Le numéro est requis')
-    .regex(/^[0-9]+$/, 'Le numéro ne doit contenir que des chiffres')
+    .min(1, 'El número es obligatorio')
+    .regex(/^[0-9]+$/, 'El número solo debe contener dígitos')
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,7 +58,7 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
         setCountryCodes(uniqueCodes);
       } catch (error) {
         console.error('Erreur lors du chargement des indicatifs pays:', error);
-        toast.error('Impossible de charger les indicatifs pays');
+        toast.error('No se pudieron cargar los códigos de país');
       } finally {
         setLoadingCountries(false);
       }
@@ -125,12 +125,12 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
         number: fullNumber
       });
       
-      toast.success('Contact mis à jour avec succès');
+      toast.success('Contacto actualizado correctamente');
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de la mise à jour du contact:', error);
-      toast.error(error instanceof Error ? error.message : 'Une erreur est survenue');
+      toast.error(error instanceof Error ? error.message : 'Ocurrió un error');
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Modifier le contact</DialogTitle>
+          <DialogTitle>Editar contacto</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -150,10 +150,10 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nom du contact</FormLabel>
+                  <FormLabel>Nombre del contacto</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Nom du contact" 
+                      placeholder="Nombre del contacto" 
                       {...field} 
                       disabled={loading} 
                     />
@@ -169,7 +169,7 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
                 name="countryCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Indicatif</FormLabel>
+                    <FormLabel>Código de país</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value}
@@ -177,7 +177,7 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un pays" />
+                          <SelectValue placeholder="Seleccionar país" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -203,11 +203,11 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
                 name="number"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Numéro de téléphone</FormLabel>
+                    <FormLabel>Número de teléfono</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
-                          placeholder="Numéro de téléphone" 
+                          placeholder="Número de teléfono" 
                           {...field} 
                           disabled={loading}
                           className="pl-2"
@@ -227,11 +227,11 @@ export function EditContactDialog({ open, onOpenChange, contact, onSuccess }: Ed
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
               >
-                Annuler
+                Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enregistrer
+                Guardar
               </Button>
             </DialogFooter>
           </form>

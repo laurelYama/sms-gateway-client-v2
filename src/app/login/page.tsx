@@ -110,8 +110,8 @@ export default function LoginPage() {
     if (!formData.email || !formData.password) {
       toast({
         variant: "destructive",
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        title: "Campos obligatorios",
+        description: "Por favor, complete todos los campos obligatorios.",
       });
       setIsLoading(false);
       return;
@@ -145,8 +145,7 @@ export default function LoginPage() {
       // Vérifier si la réponse est un succès (statut 2xx)
       if (!response.ok) {
         let errorMessage = 'Échec de la connexion';
-        let errorTitle = 'Erreur de connexion';
-        const errorCode = response.status;
+        let errorTitle = 'Error de conexión';
         
         // Essayer d'extraire un message d'erreur du JSON
         if (responseText) {
@@ -165,71 +164,83 @@ export default function LoginPage() {
         }
         
         // Messages d'erreur plus spécifiques selon le code d'état HTTP
-        switch (errorCode) {
+        switch (response.status) {
           case 400:
-            errorMessage = 'Veuillez vérifier les informations saisies et réessayer.';
-            errorTitle = 'Données invalides';
+            errorMessage = 'Solicitud inválida. Verifique la información ingresada.';
+            errorTitle = 'Error de validación';
             break;
           case 401:
-            errorMessage = 'Les identifiants fournis sont incorrects.';
-            errorTitle = 'Échec de la connexion';
+            errorMessage = 'Correo electrónico o contraseña incorrectos';
+            errorTitle = 'Credenciales inválidas';
             break;
           case 403:
-            errorMessage = 'Vous n\'êtes pas autorisé à accéder à cette ressource.';
-            errorTitle = 'Accès refusé';
+            errorMessage = 'Acceso denegado. No tiene los permisos necesarios.';
+            errorTitle = 'Acceso denegado';
             break;
           case 404:
-            errorMessage = 'Le service demandé est introuvable.';
-            errorTitle = 'Service non trouvé';
+            errorMessage = 'Servicio no encontrado. Por favor, contacte al soporte.';
+            errorTitle = 'Servicio no disponible';
             break;
           case 500:
-            errorMessage = 'Une erreur inattendue est survenue. Veuillez réessayer plus tard.';
-            errorTitle = 'Erreur du serveur';
+            errorMessage = 'Error interno del servidor. Por favor, intente de nuevo más tarde.';
+            errorTitle = 'Error del servidor';
             break;
           case 502:
           case 503:
           case 504:
-            errorMessage = 'Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.';
-            errorTitle = 'Service indisponible';
+            errorMessage = 'Servicio temporalmente no disponible. Por favor, intente de nuevo en unos momentos.';
+            errorTitle = 'Servicio no disponible';
             break;
         }
         
         // Afficher le toast d'erreur
-        toast.error(errorMessage);
+        toast({
+          variant: "destructive",
+          title: errorTitle,
+          description: errorMessage,
+          action: (
+            <ToastAction 
+              altText="Reintentar" 
+              onClick={handleSubmit}
+            >
+              Reintentar
+            </ToastAction>
+          ),
+        });
         
         // Ne pas lancer d'exception pour les erreurs courantes
-        if (errorCode === 401 || errorCode === 400) {
+        if (response.status === 401 || response.status === 400) {
           setIsLoading(false);
           return;
         }
         
         // Pour les autres erreurs, lancer une exception
         const error = new Error(errorMessage) as any;
-        error.statusCode = errorCode;
+        error.statusCode = response.status;
         throw error;
       }
       
       // Si on arrive ici, la réponse est un succès, on peut parser le JSON
       try {
         data = responseText ? JSON.parse(responseText) : {};
-        console.log('Réponse du serveur - Données:', data);
+        console.log('Respuesta del servidor - Datos:', data);
       } catch (e) {
-        console.error('Erreur lors de l\'analyse de la réponse JSON:', e, 'Réponse brute:', responseText);
-        throw new Error('Réponse invalide du serveur. Veuillez réessayer.');
+        console.error('Error al analizar la respuesta JSON:', e, 'Respuesta en bruto:', responseText);
+        throw new Error('Respuesta inválida del servidor. Por favor, intente de nuevo.');
       }
 
       // Vérifier si la réponse contient un token
       const token = data.token;
       
       if (!token) {
-        console.error('Token manquant dans la réponse:', data);
-        throw new Error(data.message || 'Réponse du serveur incomplète');
+        console.error('Token faltante en la respuesta:', data);
+        throw new Error('Respuesta del servidor incompleta');
       }
 
       // Décoder le token JWT pour obtenir les informations utilisateur
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
-        throw new Error('Format de token invalide');
+        throw new Error('Formato de token inválido');
       }
 
       try {
@@ -246,7 +257,7 @@ export default function LoginPage() {
 
         // Vérifier le rôle de l'utilisateur
         if (user.role !== 'CLIENT_USER') {
-          throw new Error('Accès non autorisé. Seuls les utilisateurs CLIENT_USER peuvent accéder à cette application.');
+          throw new Error('Acceso no autorizado. Solo los usuarios CLIENT_USER pueden acceder a esta aplicación.');
         }
 
         // Stocker le token et les informations utilisateur dans les cookies avec js-cookie
@@ -288,7 +299,7 @@ export default function LoginPage() {
         // });
       
         // Afficher le message de bienvenue avec un toast
-        toast.success('Connexion réussie');
+        toast.success('Inicio de sesión exitoso');
         
         // Vérifier s'il y a une URL de redirection dans l'URL
         const searchParams = new URLSearchParams(window.location.search);
@@ -303,57 +314,57 @@ export default function LoginPage() {
         router.push(targetUrl);
         router.refresh();
       } catch (e) {
-        console.error('Erreur lors du décodage du token:', e);
-        throw new Error('Erreur lors de la lecture des informations utilisateur');
+        console.error('Error al decodificar el token:', e);
+        throw new Error('Error al leer la información del usuario');
       }
     } catch (error: any) {
-      console.error('Erreur de connexion:', error);
+      console.error('Error de conexión:', error);
       
-      let errorMessage = 'Une erreur est survenue lors de la connexion';
-      let errorTitle = 'Erreur de connexion';
+      let errorMessage = 'Se produjo un error durante la conexión';
+      let errorTitle = 'Error de conexión';
       
       // Vérifier si c'est une erreur réseau
       if (error.message?.toLowerCase().includes('failed to fetch') || 
           error.message?.toLowerCase().includes('network request failed')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion Internet et réessayez.';
-        errorTitle = 'Erreur de réseau';
+        errorMessage = 'No se pudo conectar al servidor. Verifique su conexión a Internet e intente de nuevo.';
+        errorTitle = 'Error de red';
       } 
       // Vérifier le code d'état HTTP si disponible
       else if (error.statusCode) {
         switch (error.statusCode) {
           case 400:
-            errorMessage = 'Requête invalide. Vérifiez les informations saisies.';
-            errorTitle = 'Erreur de validation';
+            errorMessage = 'Solicitud inválida. Verifique la información ingresada.';
+            errorTitle = 'Error de validación';
             break;
           case 401:
-            errorMessage = 'Email ou mot de passe incorrect';
-            errorTitle = 'Identifiants invalides';
+            errorMessage = 'Correo electrónico o contraseña incorrectos';
+            errorTitle = 'Credenciales inválidas';
             break;
           case 403:
-            errorMessage = 'Accès refusé. Vous n\'avez pas les autorisations nécessaires.';
-            errorTitle = 'Accès refusé';
+            errorMessage = 'Acceso denegado. No tiene los permisos necesarios.';
+            errorTitle = 'Acceso denegado';
             break;
           case 404:
-            errorMessage = 'Service non trouvé. Veuillez contacter le support.';
-            errorTitle = 'Service indisponible';
+            errorMessage = 'Servicio no encontrado. Por favor, contacte al soporte.';
+            errorTitle = 'Servicio no disponible';
             break;
           case 500:
-            errorMessage = 'Erreur interne du serveur. Veuillez réessayer plus tard.';
-            errorTitle = 'Erreur du serveur';
+            errorMessage = 'Error interno del servidor. Por favor, intente de nuevo más tarde.';
+            errorTitle = 'Error del servidor';
             break;
           case 502:
           case 503:
           case 504:
-            errorMessage = 'Service temporairement indisponible. Veuillez réessayer dans quelques instants.';
-            errorTitle = 'Service indisponible';
+            errorMessage = 'Servicio temporalmente no disponible. Por favor, intente de nuevo en unos momentos.';
+            errorTitle = 'Servicio no disponible';
             break;
         }
       }
-      // Gestion des erreurs génériques
+      // Manejo de errores genéricos
       else if (error instanceof Error) {
-        // Essayer d'extraire un message d'erreur plus détaillé
+        // Intentar extraer un mensaje de error más detallado
         try {
-          // Essayer de parser le message d'erreur comme JSON
+          // Intentar analizar el mensaje de error como JSON
           const errorData = JSON.parse(error.message);
           if (errorData.message) {
             errorMessage = errorData.message;
@@ -362,22 +373,22 @@ export default function LoginPage() {
             errorTitle = errorData.title;
           }
         } catch (e) {
-          // Si le parsing échoue, utiliser le message d'erreur brut
+          // Si el análisis falla, usar el mensaje de error en bruto
           errorMessage = error.message;
         }
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
       
-      // Nettoyer et formater le message d'erreur
+      // Limpiar y formatear el mensaje de error
       errorMessage = errorMessage
-        .replace(/^Error: /, '') // Enlève le préfixe 'Error: ' si présent
-        .replace(/^[\s\S]*<title>([^<]+)<\/title>[\s\S]*$/, '$1') // Extrait le titre d'une éventuelle page HTML
-        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul espace
+        .replace(/^Error: /, '') // Elimina el prefijo 'Error: ' si está presente
+        .replace(/^[\s\S]*<title>([^<]+)<\/title>[\s\S]*$/, '$1') // Extrae el título de una posible página HTML
+        .replace(/\s+/g, ' ') // Reemplaza múltiples espacios por un solo espacio
         .trim()
-        .substring(0, 500); // Limite la longueur du message
+        .substring(0, 500); // Limita la longitud del mensaje
       
-      // S'assurer que le message se termine par un point
+      // Asegurarse de que el mensaje termine con un punto
       if (errorMessage.length > 0 && !/[.!?]$/.test(errorMessage)) {
         errorMessage += '.';
       }
@@ -409,8 +420,8 @@ export default function LoginPage() {
             <div className="bg-white/20 p-6 rounded-2xl mb-8">
               <MessageCircle className="w-16 h-16 text-white" />
             </div>
-            <h1 className="text-3xl font-bold mb-4">Bienvenue sur<br />SMS GATEWAY</h1>
-            <p className="text-blue-100 mb-8">Votre plateforme sécurisée et fiable pour la gestion de vos SMS professionnels</p>
+            <h1 className="text-3xl font-bold mb-4">Bienvenido a<br />SMS GATEWAY</h1>
+            <p className="text-blue-100 mb-8">Su plataforma segura y fiable para la gestión de sus SMS profesionales</p>
             
             <div className="space-y-4 w-full max-w-xs">
               <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
@@ -419,7 +430,7 @@ export default function LoginPage() {
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                   </svg>
                 </div>
-                <span className="text-sm">Envoi de SMS en masse</span>
+                <span className="text-sm">Envío de SMS masivo</span>
               </div>
               
               <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
@@ -428,7 +439,7 @@ export default function LoginPage() {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </div>
-                <span className="text-sm">Sécurité renforcée</span>
+                <span className="text-sm">Seguridad reforzada</span>
               </div>
               
               <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
@@ -437,7 +448,7 @@ export default function LoginPage() {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </div>
-                <span className="text-sm">Suivi en temps réel</span>
+                <span className="text-sm">Seguimiento en tiempo real</span>
               </div>
             </div>
           </div>
@@ -458,18 +469,18 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Connexion</h2>
-                <p className="text-gray-500">Entrez vos identifiants pour accéder à votre espace</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Inicio de Sesión</h2>
+                <p className="text-gray-500">Introduzca sus credenciales para acceder a su espacio</p>
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700">Adresse email</Label>
+                  <Label htmlFor="email" className="text-gray-700">Dirección de correo electrónico</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="exemple@email.com"
+                    placeholder="ejemplo@email.com"
                     value={formData.email}
                     onChange={handleInputChange}
                     required
@@ -479,9 +490,9 @@ export default function LoginPage() {
                 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <Label htmlFor="password" className="text-gray-700">Mot de passe</Label>
+                    <Label htmlFor="password" className="text-gray-700">Contraseña</Label>
                     <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                      Mot de passe oublié ?
+                      ¿Olvidó su contraseña?
                     </Link>
                   </div>
                   <div className="relative">
@@ -489,7 +500,7 @@ export default function LoginPage() {
                       id="password"
                       name="password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Entrez votre mot de passe"
+                      placeholder="Introduzca su contraseña"
                       value={formData.password}
                       onChange={handleInputChange}
                       required
@@ -521,10 +532,10 @@ export default function LoginPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Connexion en cours...
+                      Iniciando sesión...
                     </>
                   ) : (
-                    'Se connecter'
+                    'Iniciar sesión'
                   )}
                 </Button>
               </form>

@@ -54,88 +54,88 @@ type NavItem = {
 const getNavItems = (user?: UserPayload | null): NavItem[] => {
   const baseItems: NavItem[] = [
     {
-      name: 'Tableau de bord',
+      name: 'Panel de control',
       href: '/dashboard',
       icon: LayoutDashboard,
-      description: "Vue d'ensemble de votre activité et des statistiques",
+      description: 'Vista general de su actividad y estadísticas',
     },
     {
-      name: 'Messages',
+      name: 'Mensajes',
       href: '/dashboard/messages',
       icon: MessageSquare,
       subItems: [
         {
-          name: 'Message simple',
+          name: 'Mensaje simple',
           href: '/dashboard/messages/simple',
           icon: MessageSquare,
-          description: 'Envoyer un SMS à un ou plusieurs numéros',
+          description: 'Enviar un SMS a uno o varios números',
         },
         {
-          name: 'Message de groupe',
+          name: 'Mensaje grupal',
           href: '/dashboard/messages/group',
           icon: Users,
-          description: 'Envoyer un SMS à un groupe de contacts',
+          description: 'Enviar un SMS a un grupo de contactos',
         },
         {
-          name: 'Message programmé',
+          name: 'Mensaje programado',
           href: '/dashboard/messages/programme',
           icon: Clock,
-          description: "Planifier l'envoi de vos SMS",
+          description: 'Programar el envío de sus SMS',
         },
         {
-          name: 'Historique',
+          name: 'Historial',
           href: '/dashboard/messages/historique',
           icon: History,
-          description: "Consulter l'historique de vos envois",
+          description: 'Consultar el historial de sus envíos',
         },
       ],
-      description: 'Envoyez et gérez vos campagnes SMS',
+      description: 'Envíe y gestione sus campañas SMS',
     },
     {
-      name: 'Mes Groupes',
+      name: 'Mis Grupos',
       href: '/dashboard/groupes',
       icon: Users,
-      description: 'Organiser vos contacts par groupes',
+      description: 'Organizar sus contactos en grupos',
     },
     {
-      name: 'Mes Contacts',
+      name: 'Mis Contactos',
       href: '/dashboard/contacts',
       icon: Users,
-      description: 'Gérer vos contacts et vos importations',
+      description: 'Gestionar sus contactos e importaciones',
     },
     {
-      name: 'Mes Émetteurs',
+      name: 'Mis Emisores',
       href: '/dashboard/emetteur',
       icon: Megaphone,
-      description: 'Gérer vos noms d\'émetteur (Sender ID)',
+      description: 'Gestionar sus nombres de remitente (Sender ID)',
     }
   ];
 
   // Ajouter l'élément de facturation si l'utilisateur est connecté
   if (user) {
     baseItems.push({
-      name: user.typeCompte === 'PREPAYE' ? 'Commande de SMS' : 'Mes factures',
-      href: user.typeCompte === 'PREPAYE' ? '/dashboard/commandes' : '/dashboard/factures',
+      name: user.typeCompte === 'PREPAYE' ? 'Pedido de SMS' : 'Mis facturas',
+      href: user.typeCompte === 'PREPAYE' ? '/dashboard/commandes' : '/dashboard/facturas',
       icon: user.typeCompte === 'PREPAYE' ? CreditCard : FileText,
       description: user.typeCompte === 'PREPAYE' 
-        ? 'Acheter des SMS' 
-        : 'Consulter et télécharger vos factures'
+        ? 'Comprar SMS' 
+        : 'Consultar y descargar sus facturas'
     });
   }
 
   // Ajouter les éléments restants
   baseItems.push(
     {
-      name: 'API d\'envoi de SMS',
+      name: 'API de envío de SMS',
       href: '/dashboard/api-keys',
       icon: Key,
-      description: 'Accédez aux API pour l\'envoi de SMS',
+      description: 'Acceda a las API para el envío de SMS',
     },
     {
       name: 'Tickets',
       href: '/dashboard/tickets',
       icon: Ticket,
-      description: 'Ouvrir et suivre vos tickets de support',
+      description: 'Abrir y seguir sus tickets de soporte',
     }
   );
 
@@ -158,25 +158,25 @@ const BillingItem = ({ user }: { user: UserPayload | null }) => {
           )}
         >
           <CreditCard className="w-5 h-5 mr-3" />
-          Commande
+          Pedido
         </Link>
         <Link
-          href="/dashboard/factures"
+          href="/dashboard/facturas"
           className={cn(
             'flex items-center px-4 py-3 text-sm font-medium rounded-md',
-            pathname.startsWith('/dashboard/factures')
+            pathname.startsWith('/dashboard/facturas')
               ? 'bg-primary/10 text-primary'
               : 'text-gray-600 hover:bg-gray-100'
           )}
         >
           <FileText className="w-5 h-5 mr-3" />
-          Facture
+          Factura
         </Link>
       </div>
     );
   }
 
-  const billingHref = user.typeCompte === 'PREPAYE' ? '/dashboard/commandes' : '/dashboard/factures';
+  const billingHref = user.typeCompte === 'PREPAYE' ? '/dashboard/commandes' : '/dashboard/facturas';
   const isActive = pathname.startsWith(billingHref);
 
   return (
@@ -194,7 +194,7 @@ const BillingItem = ({ user }: { user: UserPayload | null }) => {
       ) : (
         <FileText className="w-5 h-5 mr-3 flex-shrink-0" />
       )}
-      {user.typeCompte === 'PREPAYE' ? 'Commande' : 'Facture'}
+      {user.typeCompte === 'PREPAYE' ? 'Pedido' : 'Factura'}
     </Link>
   );
 };
@@ -407,18 +407,18 @@ export function Sidebar({ onClose }: SidebarProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/profil" className="cursor-pointer">
                     <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profil</span>
+                    <span>Perfil</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Paramètres</span>
+                    <span>Configuración</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

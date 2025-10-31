@@ -273,10 +273,10 @@ export default function GroupesPage() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold">Groupes</h1>
+          <h1 className="text-2xl font-semibold">Grupos</h1>
           <Button disabled size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Créer un groupe
+            Crear grupo
           </Button>
         </div>
         <div className="space-y-2">
@@ -292,7 +292,7 @@ export default function GroupesPage() {
     <div className="p-6">
       <div className="flex flex-col space-y-4 mb-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Mes Groupes</h1>
+          <h1 className="text-2xl font-semibold">Mis Grupos</h1>
           <Dialog open={isCreateDialogOpen || !!editingGroupe} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button 
@@ -301,13 +301,13 @@ export default function GroupesPage() {
                 className="gap-2 px-4 py-2 text-base"
               >
                 <Plus className="h-5 w-5" />
-                <span>Créer un groupe</span>
+                <span>Crear grupo</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader className="sr-only">
                 <DialogTitle>
-                  {editingGroupe ? 'Modifier le groupe' : 'Créer un groupe'}
+                  {editingGroupe ? 'Editar grupo' : 'Crear grupo'}
                 </DialogTitle>
               </DialogHeader>
               <div className="py-4">
@@ -327,7 +327,7 @@ export default function GroupesPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="text"
-            placeholder="Rechercher un groupe..."
+            placeholder="Buscar un grupo..."
             className="pl-10 w-full max-w-md"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -340,7 +340,7 @@ export default function GroupesPage() {
           {filteredGroupes.length === 0 ? (
             <div className="text-center p-8">
               <Users className="mx-auto h-10 w-10 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">Aucun groupe pour le moment</p>
+              <p className="mt-2 text-sm text-gray-600">No hay grupos por el momento</p>
               <Button 
                 onClick={() => {
                   setEditingGroupe(null);
@@ -349,7 +349,7 @@ export default function GroupesPage() {
                 className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Créer un groupe
+                Crear grupo
               </Button>
             </div>
           ) : (
@@ -357,11 +357,11 @@ export default function GroupesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Contacts</TableHead>
-                    <TableHead>Date de création</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Contactos</TableHead>
+                    <TableHead>Fecha de creación</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -373,7 +373,7 @@ export default function GroupesPage() {
                       <TableCell className="text-gray-500">{groupe.descriptionGroupe || '-'}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {groupe.contactCount || 0} contact{groupe.contactCount !== 1 ? 's' : ''}
+                          {groupe.contactCount || 0} contacto{groupe.contactCount !== 1 ? 's' : ''}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -389,7 +389,7 @@ export default function GroupesPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleEdit(groupe)}>
                               <Pencil className="mr-2 h-4 w-4" />
-                              <span>Modifier</span>
+                              <span>Editar</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600"
@@ -399,7 +399,7 @@ export default function GroupesPage() {
                               }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Supprimer</span>
+                              <span>Eliminar</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -415,13 +415,13 @@ export default function GroupesPage() {
               }}>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Supprimer le groupe</AlertDialogTitle>
+                    <AlertDialogTitle>Eliminar grupo</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Cette action est irréversible. Êtes-vous sûr de vouloir supprimer ce groupe ?
+                      Esta acción es irreversible. ¿Está seguro de que desea eliminar este grupo?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Annuler</Button>
+                    <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
                     <Button
                       variant="destructive"
                       onClick={async () => {
@@ -438,7 +438,7 @@ export default function GroupesPage() {
                         }
                       }}
                     >
-                      Supprimer
+                      Eliminar
                     </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -447,8 +447,8 @@ export default function GroupesPage() {
               {totalItems > 0 && (
                 <div className="flex items-center justify-between px-2 py-4">
                   <div className="text-sm text-muted-foreground">
-                    Affichage de {(page - 1) * pageSize + 1} à{' '}
-                    {Math.min(page * pageSize, totalItems)} sur {totalItems} groupes
+                    Mostrando {(page - 1) * pageSize + 1} a{' '}
+                    {Math.min(page * pageSize, totalItems)} de {totalItems} grupos
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button

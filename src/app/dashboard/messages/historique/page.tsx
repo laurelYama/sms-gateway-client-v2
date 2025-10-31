@@ -192,12 +192,14 @@ export default function HistoriquePage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Historique des messages
+                Historial de mensajes
               </h1>
-              <p className="text-muted-foreground mt-1">Consultez l’historique complet de vos envois</p>
+              <p className="text-muted-foreground mt-1">Consulte el historial completo de sus envíos</p>
             </div>
-            <div className="bg-muted/50 rounded-lg px-4 py-2 text-sm">
-              <span className="font-medium text-foreground">{totalItems}</span> message{totalItems !== 1 ? 's' : ''}
+            <div className="flex items-center justify-between px-2">
+              <div className="text-sm text-muted-foreground">
+                Visualización de {(page - 1) * pageSize + 1} a {Math.min(page * pageSize, totalItems)} de {totalItems} mensaje{totalItems !== 1 ? 's' : ''}
+              </div>
             </div>
           </div>
 
@@ -207,16 +209,21 @@ export default function HistoriquePage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                      placeholder="Rechercher par référence, destinataire, message..."
+                      placeholder="Buscar por referencia, destinatario, mensaje..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-full bg-background"
+                      className="max-w-sm pl-9"
                   />
                 </div>
               </form>
-              <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)} disabled={isLoading || isDeleting || !allMessages.length}>
+              <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteAllDialogOpen(true)}
+                  disabled={filteredMessages.length === 0 || isDeleting}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Tout supprimer
+                Eliminar todo
               </Button>
             </div>
           </div>
@@ -225,15 +232,24 @@ export default function HistoriquePage() {
         {/* === TABS === */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MessageType)} className="flex-1 flex flex-col min-h-0 mt-6">
           <TabsList className="p-1 bg-muted/50 border rounded-lg w-full sm:w-auto">
-            <TabsTrigger value="unides">Unitaires</TabsTrigger>
-            <TabsTrigger value="muldes">Groupés</TabsTrigger>
-            <TabsTrigger value="muldesp">Programmés</TabsTrigger>
+            <TabsTrigger value="unides" onClick={() => setActiveTab('unides')}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Unitarios
+            </TabsTrigger>
+            <TabsTrigger value="muldes" onClick={() => setActiveTab('muldes')}>
+              <Users className="h-4 w-4 mr-2" />
+              Agrupados
+            </TabsTrigger>
+            <TabsTrigger value="muldesp" onClick={() => setActiveTab('muldesp')}>
+              <Clock className="h-4 w-4 mr-2" />
+              Programados
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="flex-1 flex flex-col min-h-0 mt-4">
             <Card className="flex-1 flex flex-col">
               <CardHeader className="border-b flex-shrink-0">
-                <CardTitle className="text-xl">Liste des messages</CardTitle>
+                <CardTitle className="text-xl">Lista de mensajes</CardTitle>
               </CardHeader>
 
               <CardContent className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -250,13 +266,13 @@ export default function HistoriquePage() {
                         <Table className="min-w-full border-collapse">
                           <TableHeader className="bg-muted/50 sticky top-0 z-10">
                             <TableRow>
-                              <TableHead>Référence</TableHead>
-                              <TableHead>Message</TableHead>
-                              <TableHead>Destinataire(s)</TableHead>
-                              <TableHead>Émetteur</TableHead>
-                              <TableHead>Statut</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead></TableHead>
+                              <TableHead>Referencia</TableHead>
+                              <TableHead>Mensaje</TableHead>
+                              <TableHead>Destinatario(s)</TableHead>
+                              <TableHead>Emisor</TableHead>
+                              <TableHead>Estado</TableHead>
+                              <TableHead>Fecha</TableHead>
+                              <TableHead>Acciones</TableHead>
                             </TableRow>
                           </TableHeader>
 
@@ -272,7 +288,7 @@ export default function HistoriquePage() {
                                       <TableCell>
                                         {m.destinataire || (
                                             <Button variant="ghost" size="sm" className="text-xs p-0 hover:text-primary hover:cursor-pointer transition-colors" onClick={() => handleShowAllRecipients(m)}>
-                                              Voir les {m.destinataires?.length || m.Destinataires?.length} destinataires
+                                              Ver los {m.destinataires?.length || m.Destinataires?.length} destinatarios
                                             </Button>
                                         )}
                                       </TableCell>
@@ -296,7 +312,7 @@ export default function HistoriquePage() {
                                               <div className="space-y-3">
                                                 <div className="text-sm">
                                                   <p className="text-muted-foreground">
-                                                    Créé le {format(new Date(m.createdAt), 'Pp', { locale: fr })}
+                                                    Creado el {format(new Date(m.createdAt), 'Pp', { locale: fr })}
                                                   </p>
                                                 </div>
 
@@ -306,7 +322,7 @@ export default function HistoriquePage() {
                                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                                       {m.dateDebutEnvoi && (
                                                         <div className="space-y-1">
-                                                          <p className="font-medium">Date de début:</p>
+                                                          <p className="font-medium">Fecha de inicio:</p>
                                                           <p className="text-muted-foreground">
                                                             {format(new Date(m.dateDebutEnvoi), 'P', { locale: fr })}
                                                           </p>
@@ -314,7 +330,7 @@ export default function HistoriquePage() {
                                                       )}
                                                       {m.dateFinEnvoi && (
                                                         <div className="space-y-1">
-                                                          <p className="font-medium">Date de fin:</p>
+                                                          <p className="font-medium">Fecha de fin:</p>
                                                           <p className="text-muted-foreground">
                                                             {format(new Date(m.dateFinEnvoi), 'P', { locale: fr })}
                                                           </p>
@@ -322,7 +338,7 @@ export default function HistoriquePage() {
                                                       )}
                                                       {m.nbParJour !== undefined && (
                                                         <div className="space-y-1">
-                                                          <p className="font-medium">Envois par jour:</p>
+                                                          <p className="font-medium">Envíos por día:</p>
                                                           <p className="text-muted-foreground">
                                                             {m.nbParJour}
                                                           </p>
@@ -330,7 +346,7 @@ export default function HistoriquePage() {
                                                       )}
                                                       {m.intervalleMinutes !== undefined && (
                                                         <div className="space-y-1">
-                                                          <p className="font-medium">Intervalle (min):</p>
+                                                          <p className="font-medium">Intervalo (min):</p>
                                                           <p className="text-muted-foreground">
                                                             {m.intervalleMinutes}
                                                           </p>
@@ -351,7 +367,7 @@ export default function HistoriquePage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={7} className="text-center py-6">Aucun message trouvé</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="text-center py-6">No se encontraron mensajes</TableCell></TableRow>
                             )}
                           </TableBody>
                         </Table>
@@ -360,11 +376,8 @@ export default function HistoriquePage() {
                       {/* === PAGINATION === */}
                       {isClient && totalItems > 0 && (
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>Afficher</span>
-                              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-8 w-16 border rounded-md bg-background px-2">
-                                {[5, 10, 20, 50].map(s => <option key={s}>{s}</option>)}
-                              </select>
+                            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                              Página {page} de {Math.ceil(totalItems / pageSize)}
                             </div>
                             <div className="flex items-center gap-1">
                               <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className="h-4 w-4" /></Button>
@@ -384,12 +397,18 @@ export default function HistoriquePage() {
         {/* === Dialogues === */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Supprimer le message</DialogTitle></DialogHeader>
-            <DialogDescription>Cette action est irréversible.</DialogDescription>
+            <DialogHeader>
+              <DialogTitle>Eliminar mensaje</DialogTitle>
+              <DialogDescription>
+                ¿Está seguro de que desea eliminar este mensaje? Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Annuler</Button>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Cancelar
+              </Button>
               <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -397,12 +416,18 @@ export default function HistoriquePage() {
 
         <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Supprimer tous les messages</DialogTitle></DialogHeader>
-            <DialogDescription>Confirmez la suppression complète de tous vos messages.</DialogDescription>
+            <DialogHeader>
+              <DialogTitle>Eliminar todos los mensajes</DialogTitle>
+              <DialogDescription>
+                ¿Está seguro de que desea eliminar todos los mensajes? Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>Annuler</Button>
+              <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>
+                Cancelar
+              </Button>
               <Button variant="destructive" onClick={confirmDeleteAll} disabled={isDeleting}>
-                {isDeleting ? 'Suppression...' : 'Tout supprimer'}
+                {isDeleting ? 'Eliminando...' : 'Eliminar todo'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -410,13 +435,13 @@ export default function HistoriquePage() {
 
         <Dialog open={showAllRecipients} onOpenChange={setShowAllRecipients}>
           <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Liste des destinataires</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Lista de destinatarios</DialogTitle></DialogHeader>
             <div className="max-h-[60vh] overflow-y-auto pr-2">
               {currentRecipients.map((r, i) => (
                   <div key={i} className="p-2 bg-muted/50 rounded mb-1">{r}</div>
               ))}
             </div>
-            <DialogFooter><Button variant="outline" onClick={() => setShowAllRecipients(false)}>Fermer</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" onClick={() => setShowAllRecipients(false)}>Cerrar</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "sonner";
+import { toast } from "sonner";
 import { resetPassword } from "@/lib/api/auth";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -32,26 +31,18 @@ export default function ResetPasswordPage() {
       console.log('Token extrait de l\'URL:', urlToken);
       
       if (!urlToken) {
-        console.error('Aucun token trouvé dans l\'URL');
+        console.error('No se encontró ningún token en la URL');
         setIsValidToken(false);
-        toast({
-          variant: "destructive",
-          title: "Lien invalide",
-          description: "Le lien de réinitialisation est invalide ou a expiré.",
-        });
+        toast.error('El enlace de restablecimiento no es válido o ha expirado.');
         router.push('/forgot-password');
         return;
       }
       
       // Vérifier le format du token (au moins 10 caractères)
       if (urlToken.length < 10) {
-        console.error('Token trop court:', urlToken);
+        console.error('Token demasiado corto:', urlToken);
         setIsValidToken(false);
-        toast({
-          variant: "destructive",
-          title: "Lien invalide",
-          description: "Le format du lien de réinitialisation est incorrect.",
-        });
+        toast.error('El formato del enlace de restablecimiento es incorrecto.');
         router.push('/forgot-password');
         return;
       }
@@ -66,45 +57,29 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation des champs
+    // Validación de campos
     if (!password || !confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs.",
-      });
+      toast.error('Por favor, complete todos los campos.');
       return;
     }
 
-    // Vérification de la correspondance des mots de passe
+    // Verificación de coincidencia de contraseñas
     if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Erreur de correspondance",
-        description: "Les mots de passe ne correspondent pas. Veuillez les saisir à nouveau.",
-      });
+      toast.error('Las contraseñas no coinciden. Por favor, inténtelo de nuevo.');
       return;
     }
 
-    // Vérification du token
+    // Verificación del token
     if (!token) {
-      console.error('[reset-password] Aucun token disponible pour la réinitialisation');
-      toast({
-        variant: "destructive",
-        title: "Lien invalide",
-        description: "Le lien de réinitialisation est incomplet. Veuillez réessayer ou demander un nouveau lien.",
-      });
+      console.error('[reset-password] No hay token disponible para el restablecimiento');
+      toast.error('El enlace de restablecimiento está incompleto. Por favor, intente de nuevo o solicite un nuevo enlace.');
       router.push('/forgot-password');
       return;
     }
 
-    // Vérification de la longueur du mot de passe
+    // Verificación de la longitud de la contraseña
     if (password.length < 8) {
-      toast({
-        variant: "destructive",
-        title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 8 caractères.",
-      });
+      toast.error('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
@@ -116,11 +91,8 @@ export default function ResetPasswordPage() {
       const response = await resetPassword(token, password);
       console.log('[reset-password] Réponse de l\'API:', response);
       
-      // Afficher un message de succès
-      toast({
-        title: "Mot de passe mis à jour",
-        description: "Votre mot de passe a été réinitialisé avec succès. Redirection vers la page de connexion...",
-      });
+      // Mostrar mensaje de éxito
+      toast.success('Su contraseña ha sido restablecida con éxito. Redirigiendo a la página de inicio de sesión...');
       
       // Rediriger vers la page de connexion après un court délai
       setTimeout(() => {
@@ -136,45 +108,35 @@ export default function ResetPasswordPage() {
         response: error.response
       });
       
-      // Gestion des erreurs spécifiques
-      let errorTitle = 'Erreur';
-      let errorMessage = "Une erreur inattendue est survenue. Veuillez réessayer plus tard.";
+      // Manejo de errores específicos
+      let errorMessage = "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo más tarde.";
       
-      // Si l'erreur contient un message, on l'utilise
+      // Si el error tiene un mensaje, lo usamos
       if (error.message) {
         errorMessage = error.message;
       }
       
-      // Traitement des erreurs spécifiques
+      // Procesamiento de errores específicos
       if (error.status === 400) {
-        errorTitle = 'Format invalide';
-        errorMessage = "Le format du mot de passe ne respecte pas les exigences de sécurité. Utilisez au moins 8 caractères avec des chiffres et des lettres.";
+        errorMessage = "El formato de la contraseña no cumple con los requisitos de seguridad. Utilice al menos 8 caracteres con números y letras.";
       } 
       else if (error.status === 401) {
-        errorTitle = 'Lien expiré';
-        errorMessage = "Le lien de réinitialisation a expiré ou n'est plus valide. Veuillez en demander un nouveau.";
+        errorMessage = "El enlace de restablecimiento ha expirado o ya no es válido. Por favor, solicite uno nuevo.";
       }
       else if (error.status === 500) {
-        errorTitle = 'Erreur serveur';
-        errorMessage = "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.";
+        errorMessage = "Se ha producido un error en el servidor. Por favor, inténtelo de nuevo más tarde.";
       }
-      // Gestion des erreurs réseau
-      else if (error.message && (error.message.includes('network') || error.message.includes('connexion'))) {
-        errorTitle = 'Problème de connexion';
-        errorMessage = "Impossible de se connecter au serveur. Vérifiez votre connexion Internet et réessayez.";
+      // Manejo de errores de red
+      else if (error.message && (error.message.includes('network') || error.message.includes('conexión'))) {
+        errorMessage = "No se pudo conectar al servidor. Verifique su conexión a Internet e intente de nuevo.";
       }
       
-      console.warn(`[reset-password] Affichage de l'erreur à l'utilisateur: ${errorTitle} - ${errorMessage}`);
+      console.warn(`[reset-password] Mostrando error al usuario: ${errorMessage}`);
       
-      // Afficher l'erreur à l'utilisateur
-      toast({
-        variant: "destructive",
-        title: errorTitle,
-        description: errorMessage,
-        duration: 10000, // 10 secondes
-      });
+      // Mostrar el error al usuario
+      toast.error(errorMessage, { duration: 10000 });
       
-      // Si le token est invalide, rediriger vers la page de demande de réinitialisation
+      // Si el token no es válido, redirigir a la página de solicitud de restablecimiento
       if (error.status === 401) {
         setTimeout(() => {
           router.push('/forgot-password');
@@ -191,7 +153,7 @@ export default function ResetPasswordPage() {
       <div className="h-screen w-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-[#0171BB] md:to-[#8DC73C]">
         <div className="text-center p-8 bg-white rounded-lg shadow-lg">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Vérification du lien de réinitialisation...</p>
+          <p className="mt-4 text-gray-600">Verificando enlace de restablecimiento...</p>
         </div>
       </div>
     );
@@ -204,14 +166,14 @@ export default function ResetPasswordPage() {
           <div className="bg-red-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
             <Lock className="h-8 w-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Lien invalide</h2>
-          <p className="text-gray-600 mb-6">Le lien de réinitialisation est invalide ou a expiré.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Enlace inválido</h2>
+          <p className="text-gray-600 mb-6">El enlace de restablecimiento no es válido o ha expirado.</p>
           <Link 
             href="/forgot-password" 
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#0171BB] hover:bg-[#015a96] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Key className="mr-2 h-4 w-4" />
-            Demander un nouveau lien
+            Solicitar un nuevo enlace
           </Link>
         </div>
       </div>
@@ -220,7 +182,6 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <Toaster />
       <div className="h-screen w-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-[#0171BB] md:to-[#8DC73C] p-0 m-0 overflow-hidden">
         <div className="w-full h-full bg-white flex flex-col md:flex-row">
           {/* Section gauche - Branding - Cachée sur mobile */}
@@ -228,22 +189,22 @@ export default function ResetPasswordPage() {
             <div className="bg-white/20 p-6 rounded-2xl mb-8">
               <Lock className="w-16 h-16 text-white" />
             </div>
-            <h1 className="text-3xl font-bold mb-4">Nouveau mot de passe</h1>
-            <p className="text-blue-100 mb-8">Créez un mot de passe sécurisé pour votre compte</p>
+            <h1 className="text-3xl font-bold mb-4">Nueva contraseña</h1>
+            <p className="text-blue-100 mb-8">Cree una contraseña segura para su cuenta</p>
             
             <div className="space-y-4 w-full max-w-xs">
               <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
                 <div className="bg-white/20 p-2 rounded-lg">
                   <ShieldCheck className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm">Sécurité renforcée</span>
+                <span className="text-sm">Seguridad mejorada</span>
               </div>
               
               <div className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg">
                 <div className="bg-white/20 p-2 rounded-lg">
                   <Key className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm">Chiffrement de bout en bout</span>
+                <span className="text-sm">Cifrado de extremo a extremo</span>
               </div>
             </div>
           </div>
@@ -264,14 +225,13 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Réinitialiser le mot de passe</h2>
-                <p className="text-gray-500">Entrez votre nouveau mot de passe ci-dessous</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Restablecer contraseña</h2>
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Nouveau mot de passe
+                    Nueva contraseña
                   </Label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <Input
@@ -288,7 +248,7 @@ export default function ResetPasswordPage() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                      aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -301,7 +261,7 @@ export default function ResetPasswordPage() {
 
                 <div>
                   <Label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                    Confirmez le mot de passe
+                    Confirmar contraseña
                   </Label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <Input
@@ -318,7 +278,7 @@ export default function ResetPasswordPage() {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                      aria-label={showConfirmPassword ? "Masquer la confirmation du mot de passe" : "Afficher la confirmation du mot de passe"}
+                      aria-label={showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -339,10 +299,10 @@ export default function ResetPasswordPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Réinitialisation en cours...
+                      Restableciendo contraseña...
                     </>
                   ) : (
-                    'Réinitialiser le mot de passe'
+                    'Restablecer contraseña'
                   )}
                 </Button>
                 
@@ -351,7 +311,7 @@ export default function ResetPasswordPage() {
                     href="/login" 
                     className="font-medium text-blue-600 hover:text-blue-500"
                   >
-                    Retour à la page de connexion
+                    Volver al inicio de sesión
                   </Link>
                 </div>
               </form>

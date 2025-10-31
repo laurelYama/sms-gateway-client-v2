@@ -46,8 +46,8 @@ export default function GroupMessagePage() {
       } catch (error) {
         console.error('Erreur lors du chargement des émetteurs:', error);
         toast({
-          title: 'Erreur',
-          description: 'Impossible de charger la liste des émetteurs',
+          title: 'Error',
+          description: 'No se pudo cargar la lista de emisores',
           variant: 'destructive',
         });
       }
@@ -92,8 +92,8 @@ export default function GroupMessagePage() {
     
     if (selectedContacts.length === 0) {
       toast({
-        title: 'Erreur',
-        description: 'Veuillez sélectionner au moins un destinataire',
+        title: 'Error',
+        description: 'Por favor seleccione al menos un destinatario',
         variant: 'destructive',
       });
       return;
@@ -102,12 +102,12 @@ export default function GroupMessagePage() {
     // Vérifier que tous les numéros sont valides
     const invalidNumbers = selectedContacts.filter(contact => !validatePhoneNumber(contact.fullNumber));
     if (invalidNumbers.length > 0) {
-      toast.error(`Certains numéros sont invalides : ${invalidNumbers.map(c => c.fullNumber).join(', ')}`);
+      toast.error(`Algunos números son inválidos: ${invalidNumbers.map(c => c.fullNumber).join(', ')}`);
       return;
     }
 
     if (!message.trim()) {
-      toast.error('Veuillez saisir un message');
+      toast.error('Por favor ingrese un mensaje');
       return;
     }
 
@@ -132,7 +132,7 @@ export default function GroupMessagePage() {
       const emetteurSelectionne = emetteurs.find(e => e.id === selectedEmetteur);
       
       if (!emetteurSelectionne) {
-        throw new Error('Émetteur sélectionné introuvable');
+        throw new Error('Emisor seleccionado no encontrado');
       }
 
       // Préparer les numéros pour l'envoi - accepter tous les formats
@@ -168,7 +168,7 @@ export default function GroupMessagePage() {
           
           // Si l'API renvoie une liste de numéros invalides
           if (errorData.invalidNumbers && Array.isArray(errorData.invalidNumbers)) {
-            throw new Error(`Certains numéros sont invalides : ${errorData.invalidNumbers.join(', ')}`);
+            throw new Error(`Algunos números son inválidos: ${errorData.invalidNumbers.join(', ')}`);
           }
           
           // Si l'API renvoie un message d'erreur
@@ -183,20 +183,20 @@ export default function GroupMessagePage() {
           // Si le parsing JSON échoue, utiliser le texte brut
           const errorText = await response.text();
           console.error('Erreur brute de la réponse:', errorText);
-          throw new Error(errorText || 'Erreur inconnue lors de l\'envoi des messages');
+          throw new Error(errorText || 'Error desconocido al enviar los mensajes');
         }
       }
       
       const responseData = await response.json();
       
-      toast.success(`Message envoyé à ${selectedContacts.length} contact(s) avec succès`);
+      toast.success(`Mensaje enviado a ${selectedContacts.length} contacto(s) exitosamente`);
 
       // Réinitialiser après l'envoi
       setSelectedContacts([]);
       setMessage('');
     } catch (error) {
       console.error('Erreur lors de l\'envoi des messages groupés:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
+      const errorMessage = error instanceof Error ? error.message : 'Se produjo un error';
       setError(errorMessage);
       toast({
         title: 'Erreur',
@@ -218,16 +218,16 @@ export default function GroupMessagePage() {
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">Envoi de message groupé</CardTitle>
+                    <CardTitle className="text-lg">Envío de mensaje grupal</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {selectedContacts.length > 0 
-                        ? `${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''} sélectionné${selectedContacts.length > 1 ? 's' : ''}` 
-                        : 'Sélectionnez un groupe ou des contacts individuels'}
+                        ? `${selectedContacts.length} contacto${selectedContacts.length > 1 ? 's' : ''} seleccionado${selectedContacts.length > 1 ? 's' : ''}` 
+                        : 'Ningún contacto seleccionado'}
                     </p>
                   </div>
                   {selectedContacts.length > 0 && (
                     <div className="bg-primary/10 text-primary text-sm px-3 py-1 rounded-full">
-                      {selectedContacts.length} contact{selectedContacts.length > 1 ? 's' : ''}
+                      {selectedContacts.length} contacto{selectedContacts.length > 1 ? 's' : ''}
                     </div>
                   )}
                 </div>
@@ -238,7 +238,7 @@ export default function GroupMessagePage() {
                     <div>
                       <Label className="flex items-center gap-2 text-base font-medium mb-2">
                         <Users className="h-4 w-4" />
-                        Sélection des destinataires
+                        Selección de destinatarios
                       </Label>
                       
                       {selectedContacts.length > 0 ? (
@@ -278,7 +278,7 @@ export default function GroupMessagePage() {
                                   )}
                                   className="text-muted-foreground hover:text-foreground"
                                 >
-                                  <span className="sr-only">Retirer</span>
+                                  <span className="sr-only">Eliminar</span>
                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                   </svg>
@@ -289,7 +289,7 @@ export default function GroupMessagePage() {
                         </div>
                       ) : (
                         <div className="text-sm text-muted-foreground p-4 bg-muted/20 rounded-md border">
-                          Aucun destinataire sélectionné. Sélectionnez des contacts dans la liste à droite.
+                          Ningún destinatario seleccionado. Seleccione contactos en la lista de la derecha.
                         </div>
                       )}
                       
@@ -303,9 +303,9 @@ export default function GroupMessagePage() {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="emetteur" className="flex items-center gap-2 text-sm">
+                      <Label className="flex items-center gap-2 text-sm">
                         <Send className="h-3.5 w-3.5" />
-                        Émetteur
+                        Emisor
                       </Label>
                       <div className="flex items-center gap-2">
                         <TooltipProvider>
@@ -319,7 +319,7 @@ export default function GroupMessagePage() {
                                     disabled={isLoading || emetteurs.length === 0}
                                   >
                                     <SelectTrigger className="w-[200px]">
-                                      <SelectValue placeholder="Sélectionner..." />
+                                      <SelectValue placeholder="Seleccionar un emisor" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {emetteurs.map((emetteur) => (
@@ -335,7 +335,7 @@ export default function GroupMessagePage() {
                                         onClick={navigateToEmetteurs}
                                         className="text-left hover:underline focus:outline-none"
                                       >
-                                        Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                                        No hay emisores disponibles. Cree uno para enviar mensajes.
                                       </button>
                                     </TooltipContent>
                                   )}
@@ -349,13 +349,13 @@ export default function GroupMessagePage() {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="message" className="flex items-center gap-2 text-base font-medium">
+                        <Label className="flex items-center gap-2 text-base font-medium">
                           <MessageSquare className="h-4 w-4" />
-                          Message groupé
+                          Mensaje
                         </Label>
                         <div className="flex flex-col items-end">
                           <span className="text-xs text-muted-foreground">
-                            {message.length}/160 caractères • {Math.ceil(message.length / 160)} SMS par destinataire
+                            {message.length}/160 caracteres • {Math.ceil(message.length / 160)} SMS por destinatario
                           </span>
                           {selectedContacts.length > 0 && message.length > 0 && (
                             <span className="text-xs font-medium text-primary">
@@ -368,12 +368,12 @@ export default function GroupMessagePage() {
                         id="message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Saisissez votre message ici..."
+                        placeholder="Ingrese su mensaje..."
                         className="min-h-[150px]"
                         maxLength={160}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Le message sera envoyé à {selectedContacts.length} destinataire{selectedContacts.length > 1 ? 's' : ''}.
+                        El mensaje sera enviado a {selectedContacts.length} destinatario{selectedContacts.length > 1 ? 's' : ''}.
                       </p>
                     </div>
                   
@@ -389,20 +389,20 @@ export default function GroupMessagePage() {
                         {selectedContacts.length > 0 ? (
                           <div className="space-y-1">
                             <div>
-                              <span className="font-medium">{selectedContacts.length}</span> destinataire{selectedContacts.length > 1 ? 's' : ''} sélectionné{selectedContacts.length > 1 ? 's' : ''}
+                              <span className="font-medium">{selectedContacts.length}</span> destinatario{selectedContacts.length > 1 ? 's' : ''} seleccionado{selectedContacts.length > 1 ? 's' : ''}
                             </div>
                             {message.length > 0 && (
                               <div className="text-xs">
-                                <span className="font-medium">{Math.ceil(message.length / 160)}</span> SMS × {selectedContacts.length} destinataires = 
+                                <span className="font-medium">{Math.ceil(message.length / 160)}</span> SMS × {selectedContacts.length} destinatarios = 
                                 <span className="font-bold text-primary ml-1">
-                                  {selectedContacts.length * Math.ceil(message.length / 160)} SMS au total
+                                  {selectedContacts.length * Math.ceil(message.length / 160)} SMS en total
                                 </span>
                               </div>
                             )}
                           </div>
                         ) : (
                           <div className="text-sm text-muted-foreground">
-                            Sélectionnez des destinataires
+                            Seleccione destinatarios
                           </div>
                         )}
                       </div>
@@ -414,12 +414,12 @@ export default function GroupMessagePage() {
                         {isLoading ? (
                           <>
                             <RefreshCw className="h-4 w-4 animate-spin" />
-                            Envoi en cours...
+                            Envío en curso...
                           </>
                         ) : (
                           <>
                             <Send className="h-4 w-4" />
-                            {`Envoyer à ${selectedContacts.length} destinataire${selectedContacts.length > 1 ? 's' : ''}`}
+                            {`Enviar a ${selectedContacts.length} destinatario${selectedContacts.length > 1 ? 's' : ''}`}
                           </>
                         )}
                       </Button>
@@ -434,7 +434,7 @@ export default function GroupMessagePage() {
           <div className="lg:col-span-1 order-1 lg:order-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Groupes de contacts</CardTitle>
+                <CardTitle className="text-lg">Grupos de contactos</CardTitle>
               </CardHeader>
               <CardContent>
                 <GroupContactsSelector 

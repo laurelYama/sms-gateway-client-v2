@@ -118,8 +118,8 @@ export default function ContactsPage() {
       setContacts(data);
       setFilteredContacts(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des contacts:', error);
-      toast.error('Erreur lors du chargement des contacts');
+      console.error('Error al cargar los contactos:', error);
+      toast.error('Error al cargar los contactos');
     } finally {
       setLoading(false);
     }
@@ -130,8 +130,8 @@ export default function ContactsPage() {
       await deleteContact(contactId);
       await loadContacts();
     } catch (error) {
-      console.error('Erreur lors de la suppression du contact:', error);
-      throw error; // L'erreur est gérée dans le composant DeleteContactDialog
+      console.error('Error al eliminar el contacto:', error);
+      throw error; // El error se maneja en el componente DeleteContactDialog
     }
   };
   
@@ -151,7 +151,7 @@ export default function ContactsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p>Chargement des contacts...</p>
+        <p>Cargando contactos...</p>
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function ContactsPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Mes contacts</h1>
+        <h1 className="text-2xl font-bold">Mis contactos</h1>
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -168,7 +168,7 @@ export default function ContactsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="Rechercher un contact..."
+              placeholder="Buscar un contacto..."
               className="pl-10 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -181,7 +181,7 @@ export default function ContactsPage() {
               onClick={() => setIsImportDialogOpen(true)}
             >
               <Upload className="h-4 w-4 mr-2" />
-              Importer
+              Importar
             </Button>
             <AddContactDialog 
               groupId="" // Vous devrez peut-être passer un groupId ici si nécessaire
@@ -197,22 +197,22 @@ export default function ContactsPage() {
                 <TableHead className="w-1/2">
                   <div className="flex items-center">
                     <User className="h-4 w-4 mr-2" />
-                    <span>Nom</span>
+                    <span>Nombre</span>
                   </div>
                 </TableHead>
                 <TableHead className="w-1/4">
                   <div className="flex items-center">
                     <Phone className="h-4 w-4 mr-2" />
-                    <span>Téléphone</span>
+                    <span>Teléfono</span>
                   </div>
                 </TableHead>
                 <TableHead className="w-1/4">
                   <div className="flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    <span>Groupe</span>
+                    <span>Grupo</span>
                   </div>
                 </TableHead>
-                <TableHead className="w-20 text-right">Actions</TableHead>
+                <TableHead className="w-20 text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,7 +227,7 @@ export default function ContactsPage() {
                           <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 mr-3">
                             {contact.contactName ? contact.contactName.charAt(0).toUpperCase() : '?'}
                           </span>
-                          <span>{contact.contactName || 'Sans nom'}</span>
+                          <span>{contact.contactName || 'Sin nombre'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -239,10 +239,10 @@ export default function ContactsPage() {
                         <div className="flex items-center">
                           {contact.clientsGroup ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {contact.clientsGroup.nomGroupe || 'Aucun groupe'}
+                              {contact.clientsGroup.nomGroupe || 'Sin grupo'}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">Aucun groupe</span>
+                            <span className="text-muted-foreground">Sin grupo</span>
                           )}
                         </div>
                       </TableCell>
@@ -267,13 +267,13 @@ export default function ContactsPage() {
                               }}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              <span>Modifier</span>
+                              <span>Editar</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleMoveClick(contact)}
                             >
                               <Move className="mr-2 h-4 w-4" />
-                              <span>Déplacer</span>
+                              <span>Mover</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600"
@@ -289,7 +289,7 @@ export default function ContactsPage() {
                               }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Supprimer</span>
+                              <span>Eliminar</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -299,7 +299,7 @@ export default function ContactsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'Aucun contact trouvé' : 'Aucun contact pour le moment'}
+                    {searchTerm ? 'No se encontraron contactos' : 'No hay contactos por el momento'}
                   </TableCell>
                 </TableRow>
               )}
@@ -310,12 +310,12 @@ export default function ContactsPage() {
           {filteredContacts.length > 0 && (
             <div className="flex items-center justify-between px-2 py-4">
               <div className="text-sm text-muted-foreground">
-                Affichage de {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredContacts.length)} sur {filteredContacts.length} contact(s)
+                Mostrando {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredContacts.length)} de {filteredContacts.length} contacto{filteredContacts.length !== 1 ? 's' : ''}
               </div>
               
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm font-medium">Lignes par page</span>
+                  <span className="text-sm font-medium">Filas por página</span>
                   <select
                     className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
                     value={itemsPerPage}
@@ -352,7 +352,7 @@ export default function ContactsPage() {
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="flex items-center px-2 text-sm">
-                    Page {currentPage} sur {totalPages}
+                    Página {currentPage} de {totalPages}
                   </div>
                   <Button
                     variant="outline"

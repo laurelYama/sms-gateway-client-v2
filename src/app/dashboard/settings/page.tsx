@@ -22,8 +22,8 @@ export default function SettingsPage() {
     
     if (newPassword !== confirmPassword) {
       toast({
-        title: 'Erreur',
-        description: 'Les nouveaux mots de passe ne correspondent pas',
+        title: 'Error',
+        description: 'Las nuevas contraseñas no coinciden',
         variant: 'destructive',
       });
       return;
@@ -31,8 +31,8 @@ export default function SettingsPage() {
 
     if (newPassword.length < 12) {
       toast({
-        title: 'Erreur',
-        description: 'Le nouveau mot de passe doit contenir au moins 12 caractères',
+        title: 'Error',
+        description: 'La nueva contraseña debe tener al menos 12 caracteres',
         variant: 'destructive',
       });
       return;
@@ -46,7 +46,7 @@ export default function SettingsPage() {
         newPassword: newPassword
       });
       
-      toast.success('Mot de passe modifié avec succès');
+      toast.success('Contraseña modificada correctamente');
       
       // Réinitialiser le formulaire
       setCurrentPassword('');
@@ -55,7 +55,7 @@ export default function SettingsPage() {
       
     } catch (error) {
       console.error('Erreur lors du changement de mot de passe:', error);
-      toast.error(error.message || 'Une erreur est survenue lors de la modification du mot de passe');
+      toast.error(error.message || 'Ocurrió un error al modificar la contraseña');
     } finally {
       setIsLoading(false);
     }
@@ -65,24 +65,24 @@ export default function SettingsPage() {
     <div className="container mx-auto py-6">
       <div className="flex flex-col space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Paramètres</h1>
+          <h1 className="text-3xl font-bold">Configuración</h1>
           <p className="text-muted-foreground">
-            Gérez vos paramètres de compte
+            Gestione la configuración de su cuenta
           </p>
         </div>
 
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Changer le mot de passe</CardTitle>
+              <CardTitle>Cambiar contraseña</CardTitle>
               <CardDescription>
-                Assurez-vous que votre nouveau mot de passe est sécurisé et différent des précédents.
+                Asegúrese de que su nueva contraseña sea segura y diferente a las anteriores.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="current-password">Mot de passe actuel</Label>
+                  <Label htmlFor="current-password">Contraseña actual</Label>
                   <div className="relative">
                     <Input
                       id="current-password"
@@ -107,7 +107,7 @@ export default function SettingsPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                  <Label htmlFor="new-password">Nueva contraseña</Label>
                   <div className="relative">
                     <Input
                       id="new-password"
@@ -131,12 +131,12 @@ export default function SettingsPage() {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Le mot de passe doit contenir au moins 12 caractères
+                    La contraseña debe contener al menos 12 caracteres
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmer le nouveau mot de passe</Label>
+                  <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
                   <div className="relative">
                     <Input
                       id="confirm-password"
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                 
                 <div className="flex justify-end">
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? 'Enregistrement...' : 'Mettre à jour le mot de passe'}
+                    {isLoading ? 'Guardando...' : 'Actualizar contraseña'}
                   </Button>
                 </div>
               </form>

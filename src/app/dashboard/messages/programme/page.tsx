@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { AlertCircle, Send, Calendar, Clock, RefreshCw, User, MessageSquare, Search } from 'lucide-react';
+import { AlertCircle, Send, Calendar, Clock, RefreshCw, User, Users, MessageSquare, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import GroupContactsSelector from '@/components/messages/group-contacts-selector';
 import { fetchContacts } from '@/lib/api/contacts';
@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, es } from 'date-fns/locale';
 import { getTokenFromCookies, getUserFromCookies } from '@/lib/auth';
 import { API_ENDPOINTS } from '@/config/api';
 
@@ -65,7 +65,7 @@ export default function ScheduledMessagePage() {
         }
       } catch (error) {
         console.error('Erreur lors du chargement des émetteurs:', error);
-        showError('Impossible de charger la liste des émetteurs');
+        showError('No se pudo cargar la lista de emisores');
       }
     };
     
@@ -112,22 +112,22 @@ export default function ScheduledMessagePage() {
     e.preventDefault();
     
     if (selectedContacts.length === 0) {
-      setError('Veuillez sélectionner au moins un destinataire');
+      setError('Por favor seleccione al menos un destinatario');
       return;
     }
     
     if (!message.trim()) {
-      setError('Veuillez saisir un message');
+      setError('Por favor ingrese un mensaje');
       return;
     }
     
     if (!dateDebut) {
-      setError('Veuillez sélectionner une date de début');
+      setError('Por favor seleccione una fecha de inicio');
       return;
     }
     
     if (!dateFin) {
-      setError('Veuillez sélectionner une date de fin');
+      setError('Por favor seleccione una fecha de finalización');
       return;
     }
     
@@ -146,17 +146,17 @@ export default function ScheduledMessagePage() {
       // Récupérer l'ID client depuis les données utilisateur
       const user = getUserFromCookies();
       if (!user) {
-        throw new Error('Utilisateur non connecté');
+        throw new Error('Usuario no conectado');
       }
       
       const clientId = user.id;
       if (!clientId) {
-        throw new Error('ID client non trouvé dans les informations utilisateur');
+        throw new Error('ID de cliente no encontrado en la información del usuario');
       }
       
       const emetteurSelectionne = emetteurs.find(e => e.nom === selectedEmetteur);
       if (!emetteurSelectionne) {
-        throw new Error('Émetteur sélectionné introuvable');
+        throw new Error('Emisor seleccionado no encontrado');
       }
       
       // Formater les dates au format YYYY-MM-DD
@@ -191,12 +191,12 @@ export default function ScheduledMessagePage() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de l\'envoi du message programmé');
+        throw new Error(errorData.message || 'Error al enviar el mensaje programado');
       }
       
       const responseData = await response.json();
       
-      toast.success(`Message programmé pour ${selectedContacts.length} destinataire(s)`);
+      toast.success(`Mensaje programado para ${selectedContacts.length} destinatario(s)`);
 
       // Réinitialiser le formulaire
       setSelectedContacts([]);
@@ -208,7 +208,7 @@ export default function ScheduledMessagePage() {
       
     } catch (error) {
       console.error('Erreur lors de l\'envoi du message programmé:', error);
-      setError(error instanceof Error ? error.message : 'Une erreur est survenue');
+      setError(error instanceof Error ? error.message : 'Se produjo un error');
     } finally {
       setIsLoading(false);
     }
@@ -223,8 +223,8 @@ export default function ScheduledMessagePage() {
             <Card>
               <CardHeader className="pb-4">
                 <div>
-                  <CardTitle className="text-lg">Message programmé</CardTitle>
-                  <p className="text-sm text-muted-foreground">Planifiez l'envoi de SMS à des dates et heures précises</p>
+                  <CardTitle className="text-lg">Mensaje programado</CardTitle>
+                  <p className="text-sm text-muted-foreground">Programe el envío de SMS para fechas y horas específicas</p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -234,7 +234,7 @@ export default function ScheduledMessagePage() {
                     <div>
                       <Label className="flex items-center gap-2 text-base font-medium mb-2">
                         <User className="h-4 w-4" />
-                        Destinataires sélectionnés
+                        Destinatarios seleccionados
                       </Label>
                       
                       {selectedContacts.length > 0 ? (
@@ -252,7 +252,7 @@ export default function ScheduledMessagePage() {
                                   onClick={() => handleContactToggle(phone)}
                                   className="text-muted-foreground hover:text-foreground"
                                 >
-                                  <span className="sr-only">Retirer</span>
+                                  <span className="sr-only">Eliminar</span>
                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                   </svg>
@@ -263,12 +263,12 @@ export default function ScheduledMessagePage() {
                         </div>
                       ) : (
                         <div className="text-sm text-muted-foreground p-3 bg-muted/20 rounded-md border">
-                          Aucun destinataire sélectionné. Sélectionnez des contacts dans la liste à droite.
+                          Ningún destinatario seleccionado. Seleccione contactos en la lista de la derecha.
                         </div>
                       )}
                       
                       <div className="mt-4">
-                        <Label className="text-sm font-medium">Émetteur</Label>
+                        <Label className="text-sm font-medium">Emisor</Label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -279,7 +279,7 @@ export default function ScheduledMessagePage() {
                                   disabled={emetteurs.length === 0}
                                 >
                                   <SelectTrigger className="mt-1">
-                                    <SelectValue placeholder="Sélectionnez un émetteur" />
+                                    <SelectValue placeholder="Seleccione un emisor" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {emetteurs.map((emetteur) => (
@@ -297,7 +297,7 @@ export default function ScheduledMessagePage() {
                                   onClick={navigateToEmetteurs}
                                   className="text-left hover:underline focus:outline-none"
                                 >
-                                  Aucun émetteur trouvé. Cliquez ici pour en créer un.
+                                  No se encontró ningún emisor. Haga clic aquí para crear uno.
                                 </button>
                               </TooltipContent>
                             )}
@@ -305,7 +305,7 @@ export default function ScheduledMessagePage() {
                         </TooltipProvider>
                         {emetteurs.length === 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Aucun émetteur disponible
+                            No hay emisores disponibles
                           </p>
                         )}
                       </div>
@@ -316,15 +316,15 @@ export default function ScheduledMessagePage() {
                       <div className="flex items-center justify-between">
                         <Label htmlFor="message" className="flex items-center gap-2 text-base font-medium">
                           <MessageSquare className="h-4 w-4" />
-                          Message
+                          Mensaje
                         </Label>
-                        <span className="text-sm text-muted-foreground">
-                          {message.length}/160 caractères • {Math.ceil(message.length / 160)} message{message.length > 160 ? 's' : ''}
-                        </span>
+                        <div className="text-xs text-muted-foreground">
+                          {message.length}/160 caracteres • {Math.ceil(message.length / 160)} SMS por destinatario
+                        </div>
                       </div>
                       <Textarea
                         id="message"
-                        placeholder="Saisissez votre message ici..."
+                        placeholder="Ingrese su mensaje..."
                         className="min-h-[120px]"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
@@ -335,13 +335,13 @@ export default function ScheduledMessagePage() {
                     <div className="space-y-4 pt-2">
                       <div className="flex items-center gap-2 text-base font-medium">
                         <Clock className="h-4 w-4" />
-                        <span>Programmation</span>
+                        <span>Programación</span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Date de début */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Date de début</Label>
+                          <Label className="text-sm font-medium">Fecha de inicio</Label>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -350,7 +350,7 @@ export default function ScheduledMessagePage() {
                               >
                                 <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
                                 <span className="truncate">
-                                  {dateDebut ? format(dateDebut, 'PPP', { locale: fr }) : 'Choisir une date'}
+                                  {dateDebut ? format(dateDebut, 'PPP', { locale: es }) : 'Seleccione una fecha'}
                                 </span>
                               </Button>
                             </PopoverTrigger>
@@ -361,7 +361,7 @@ export default function ScheduledMessagePage() {
                                   selected={dateDebut}
                                   onSelect={setDateDebut}
                                   initialFocus
-                                  locale={fr}
+                                  locale={es}
                                   className="border-0"
                                 />
                               </div>
@@ -371,7 +371,7 @@ export default function ScheduledMessagePage() {
                         
                         {/* Date de fin */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Date de fin</Label>
+                          <Label className="text-sm font-medium">Fecha de finalización</Label>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -380,7 +380,7 @@ export default function ScheduledMessagePage() {
                               >
                                 <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
                                 <span className="truncate">
-                                  {dateFin ? format(dateFin, 'PPP', { locale: fr }) : 'Choisir une date'}
+                                  {dateFin ? format(dateFin, 'PPP', { locale: es }) : 'Seleccione una fecha'}
                                 </span>
                               </Button>
                             </PopoverTrigger>
@@ -391,7 +391,7 @@ export default function ScheduledMessagePage() {
                                   selected={dateFin}
                                   onSelect={setDateFin}
                                   initialFocus
-                                  locale={fr}
+                                  locale={es}
                                   className="border-0"
                                   disabled={date => dateDebut ? date < dateDebut : false}
                                 />
@@ -404,7 +404,7 @@ export default function ScheduledMessagePage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Nombre d'envois par jour */}
                         <div className="space-y-2">
-                          <Label htmlFor="nbParJour">Nombre d'envois par jour</Label>
+                          <Label htmlFor="nbParJour">Mensajes por día</Label>
                           <Input
                             id="nbParJour"
                             type="number"
@@ -416,7 +416,7 @@ export default function ScheduledMessagePage() {
                         
                         {/* Intervalle en minutes */}
                         <div className="space-y-2">
-                          <Label htmlFor="intervalleMinutes">Intervalle entre les envois (minutes)</Label>
+                          <Label htmlFor="intervalleMinutes">Intervalo entre envíos (minutos)</Label>
                           <Input
                             id="intervalleMinutes"
                             type="number"
@@ -438,18 +438,18 @@ export default function ScheduledMessagePage() {
                     <div className="flex justify-end pt-4 border-t">
                       <Button 
                         type="submit" 
-                        className="gap-2"
-                        disabled={isLoading || selectedContacts.length === 0 || !message}
+                        className="w-full gap-2"
+                        disabled={isLoading || selectedContacts.length === 0 || !message.trim() || !dateDebut || !dateFin}
                       >
                         {isLoading ? (
                           <>
                             <RefreshCw className="h-4 w-4 animate-spin" />
-                            Enregistrement...
+                            Programando en curso...
                           </>
                         ) : (
                           <>
-                            <Send className="h-4 w-4" />
-                            Programmer l'envoi
+                            <Calendar className="h-4 w-4" />
+                            Programar envío
                           </>
                         )}
                       </Button>
@@ -466,10 +466,10 @@ export default function ScheduledMessagePage() {
               <CardHeader className="pb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Groupes de contacts</CardTitle>
+                    <Users className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Selección de contactos</CardTitle>
                   </div>
-                  <p className="text-sm text-muted-foreground">Sélectionnez un groupe pour voir les contacts</p>
+                  <p className="text-sm text-muted-foreground">Seleccione un grupo o contactos individuales</p>
                 </div>
               </CardHeader>
               <div className="px-4 pb-4">

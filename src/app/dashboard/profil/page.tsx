@@ -18,46 +18,46 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Schéma de validation amélioré
+// Esquema de validación mejorado
 const profileFormSchema = z.object({
     raisonSociale: z.string().min(2, {
-        message: 'La raison sociale doit contenir au moins 2 caractères.',
+        message: 'La razón social debe contener al menos 2 caracteres.',
     }).max(100, {
-        message: 'La raison sociale ne peut pas dépasser 100 caractères.',
+        message: 'La razón social no puede exceder los 100 caracteres.',
     }),
     secteurActivite: z.string({
-        required_error: 'Veuillez sélectionner un secteur d\'activité',
+        required_error: 'Por favor seleccione un sector de actividad',
     }),
     ville: z.string({
-        required_error: 'Veuillez sélectionner une ville',
+        required_error: 'Por favor seleccione una ciudad',
     }),
     adresse: z.string().max(200, {
-        message: 'L\'adresse ne peut pas dépasser 200 caractères.',
+        message: 'La dirección no puede exceder los 200 caracteres.',
     }),
     telephone: z.string()
-        .min(8, { message: 'Le numéro de téléphone doit contenir au moins 8 chiffres.' })
-        .regex(/^[+]?[\d\s-()]+$/, { message: 'Format de téléphone invalide.' }),
+        .min(8, { message: 'El número de teléfono debe contener al menos 8 dígitos.' })
+        .regex(/^[+]?[\d\s-()]+$/, { message: 'Formato de teléfono inválido.' }),
     email: z.string()
-        .email({ message: 'Veuillez entrer une adresse email valide.' })
+        .email({ message: 'Por favor ingrese una dirección de correo electrónico válida.' })
         .toLowerCase(),
     emetteur: z.string().min(2, {
-        message: 'L\'émetteur doit contenir au moins 2 caractères.',
+        message: 'El emisor debe contener al menos 2 caracteres.',
     }).max(11, {
-        message: 'L\'émetteur SMS ne peut pas dépasser 11 caractères.',
+        message: 'El emisor SMS no puede exceder los 11 caracteres.',
     }),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-// Fonction pour formater la date
+// Función para formatear la fecha
 function formatDate(date: Date): string {
-    const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     const day = date.getDate();
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${day} ${month} ${year} à ${hours}:${minutes}`;
+    return `${day} de ${month} de ${year} a las ${hours}:${minutes}`;
 }
 
 export default function ProfilePage() {
@@ -125,8 +125,8 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Erreur lors du chargement du profil:', error);
             toast({
-                title: 'Erreur',
-                description: 'Impossible de charger les informations du profil',
+                title: 'Error',
+                description: 'No se pudieron cargar los datos del perfil',
                 variant: 'destructive',
             });
         } finally {
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                 const token = getTokenFromCookies();
                 
                 if (!token) {
-                    throw new Error('Veuvez vous reconnecter pour continuer');
+                    throw new Error('Por favor, inicie sesión nuevamente para continuar');
                 }
 
                 const [villesResponse, secteursResponse] = await Promise.all([
@@ -175,7 +175,7 @@ export default function ProfilePage() {
             } catch (error) {
                 console.error('Erreur:', error);
                 toast({
-                    title: 'Erreur',
+                    title: 'Error',
                     description: error instanceof Error ? error.message : 'Impossible de charger la liste des villes',
                     variant: 'destructive',
                 });
@@ -216,14 +216,14 @@ export default function ProfilePage() {
             }));
 
             toast({
-                title: 'Succès',
-                description: 'Votre profil a été mis à jour avec succès',
+                title: 'Éxito',
+                description: 'Su perfil ha sido actualizado correctamente',
             });
         } catch (error) {
             console.error('Erreur lors de la mise à jour du profil:', error);
             toast({
-                title: 'Erreur',
-                description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la mise à jour du profil',
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Ocurrió un error al actualizar el perfil',
                 variant: 'destructive',
             });
         } finally {
@@ -235,7 +235,7 @@ export default function ProfilePage() {
         return (
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Chargement de votre profil...</p>
+                <p className="text-sm text-muted-foreground">Cargando su perfil...</p>
             </div>
         );
     }
@@ -244,10 +244,10 @@ export default function ProfilePage() {
         return (
             <div className="text-center py-12">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Impossible de charger le profil</h3>
-                <p className="text-muted-foreground mb-6">Une erreur est survenue lors du chargement de vos informations</p>
+                <h3 className="text-lg font-semibold mb-2">No se pudo cargar el perfil</h3>
+                <p className="text-muted-foreground mb-6">Ocurrió un error al cargar su información</p>
                 <Button onClick={loadProfile}>
-                    Réessayer
+                    Reintentar
                 </Button>
             </div>
         );
@@ -258,14 +258,14 @@ export default function ProfilePage() {
             {/* En-tête */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Mon Profil</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
                     <p className="text-muted-foreground mt-1">
-                        Gérez les informations de votre compte professionnel
+                        Gestione la información de su cuenta profesional
                     </p>
                 </div>
                 <Button onClick={handleOpenDialog} size="lg">
                     <Edit className="h-4 w-4 mr-2" />
-                    Modifier le profil
+                    Editar perfil
                 </Button>
             </div>
 
@@ -292,11 +292,11 @@ export default function ProfilePage() {
                                 ) : (
                                     <AlertCircle className="h-3 w-3" />
                                 )}
-                                {userData.statutCompte || 'Inconnu'}
+                                {userData.statutCompte === 'ACTIF' ? 'Activo' : 'Inactivo'}
                             </Badge>
                             <Badge variant="outline" className="gap-1">
                                 <CreditCard className="h-3 w-3" />
-                                {userData.typeCompte === 'POSTPAYE' ? 'Postpayé' : 'Prépayé'}
+                                {userData.typeCompte === 'POSTPAYE' ? 'Pago posterior' : 'Prepago'}
                             </Badge>
                         </div>
                     </div>
@@ -308,12 +308,12 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Building2 className="h-5 w-5" />
-                        Informations de l'entreprise
+                        Información de la empresa
                     </CardTitle>
                     <CardDescription>
                         {lastSaved && (
                             <span className="text-xs">
-                Dernière modification le {formatDate(lastSaved)}
+                Última modificación el {formatDate(lastSaved)}
               </span>
                         )}
                     </CardDescription>
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Building2 className="h-4 w-4" />
-                                Raison sociale
+                                Razón social
                             </p>
                             <p className="text-sm font-semibold">{userData.raisonSociale}</p>
                         </div>
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Globe className="h-4 w-4" />
-                                Secteur d'activité
+                                Sector de actividad
                             </p>
                             <p className="text-sm font-semibold">{userData.secteurActivite}</p>
                         </div>
@@ -339,7 +339,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Mail className="h-4 w-4" />
-                                Email
+                                Correo electrónico
                             </p>
                             <p className="text-sm font-semibold">{userData.email}</p>
                         </div>
@@ -347,7 +347,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Phone className="h-4 w-4" />
-                                Téléphone
+                                Teléfono
                             </p>
                             <p className="text-sm font-semibold">{userData.telephone}</p>
                         </div>
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <MapPin className="h-4 w-4" />
-                                Ville
+                                Ciudad
                             </p>
                             <p className="text-sm font-semibold">{userData.ville}</p>
                         </div>
@@ -363,13 +363,13 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <MapPin className="h-4 w-4" />
-                                Adresse
+                                Dirección
                             </p>
                             <p className="text-sm font-semibold">{userData.adresse}</p>
                         </div>
 
                         <div className="space-y-2 md:col-span-2">
-                            <p className="text-sm font-medium text-muted-foreground">Émetteur SMS</p>
+                            <p className="text-sm font-medium text-muted-foreground">Emisor SMS</p>
                             <p className="text-sm font-semibold">{userData.emetteur}</p>
                         </div>
                     </div>
@@ -381,22 +381,22 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5" />
-                        Informations réglementaires
+                        Información regulatoria
                     </CardTitle>
                     <CardDescription>
-                        Ces informations ne peuvent pas être modifiées directement
+                        Esta información no puede ser modificada directamente
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <p className="text-sm font-medium text-muted-foreground">NIF (Numéro d'Identification Fiscale)</p>
-                            <p className="text-sm font-semibold">{userData.nif || 'Non renseigné'}</p>
+                            <p className="text-sm font-medium text-muted-foreground">NIF (Número de Identificación Fiscal)</p>
+                            <p className="text-sm font-semibold">{userData.nif || 'No proporcionado'}</p>
                         </div>
 
                         <div className="space-y-2">
-                            <p className="text-sm font-medium text-muted-foreground">RCCM (Registre de Commerce)</p>
-                            <p className="text-sm font-semibold">{userData.rccm || 'Non renseigné'}</p>
+                            <p className="text-sm font-medium text-muted-foreground">RCCM (Registro de Comercio)</p>
+                            <p className="text-sm font-semibold">{userData.rccm || 'No proporcionado'}</p>
                         </div>
                     </div>
 
@@ -405,7 +405,7 @@ export default function ProfilePage() {
                     <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription className="text-xs">
-                            Pour modifier vos informations réglementaires (NIF, RCCM), veuillez contacter le service client.
+                            Para modificar su información regulatoria (NIF, RCCM), por favor contacte al servicio al cliente.
                         </AlertDescription>
                     </Alert>
                 </CardContent>
@@ -417,10 +417,10 @@ export default function ProfilePage() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Edit className="h-5 w-5" />
-                            Modifier les informations
+                            Modificar información
                         </DialogTitle>
                         <DialogDescription>
-                            Mettez à jour vos informations professionnelles. Les champs marqués d'un * sont obligatoires.
+                            Actualice su información profesional. Los campos marcados con * son obligatorios.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -434,13 +434,13 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Building2 className="h-4 w-4" />
-                                                Raison sociale *
+                                                Razón social *
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     disabled={saving}
-                                                    placeholder="Nom de votre entreprise"
+                                                    placeholder="Nombre de su empresa"
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -455,7 +455,7 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Globe className="h-4 w-4" />
-                                                Secteur d'activité *
+                                                Sector de actividad *
                                             </FormLabel>
                                             <Select 
                                                 onValueChange={field.onChange} 
@@ -464,7 +464,7 @@ export default function ProfilePage() {
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Sélectionnez un secteur d'activité" />
+                                                        <SelectValue placeholder="Seleccione un sector de actividad" />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
@@ -490,18 +490,18 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Mail className="h-4 w-4" />
-                                                Email *
+                                                Correo electrónico *
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     type="email"
                                                     disabled={saving}
-                                                    placeholder="contact@entreprise.com"
+                                                    placeholder="contacto@empresa.com"
                                                 />
                                             </FormControl>
                                             <FormDescription className="text-xs">
-                                                Utilisé pour les notifications importantes
+                                                Utilizado para notificaciones importantes
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -515,13 +515,13 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Phone className="h-4 w-4" />
-                                                Téléphone *
+                                                Teléfono *
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     disabled={saving}
-                                                    placeholder="+241 XX XX XX XX"
+                                                    placeholder="+241 XX XXX XXX"
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -536,7 +536,7 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4" />
-                                                Ville *
+                                                Ciudad *
                                             </FormLabel>
                                             <Select 
                                                 onValueChange={field.onChange} 
@@ -545,7 +545,7 @@ export default function ProfilePage() {
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Sélectionnez une ville" />
+                                                        <SelectValue placeholder="Seleccione una ciudad" />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
@@ -571,13 +571,13 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4" />
-                                                Adresse *
+                                                Dirección *
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     disabled={saving}
-                                                    placeholder="Adresse complète"
+                                                    placeholder="Dirección completa"
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -590,17 +590,17 @@ export default function ProfilePage() {
                                     name="emetteur"
                                     render={({ field }) => (
                                         <FormItem className="md:col-span-2">
-                                            <FormLabel>Émetteur SMS</FormLabel>
+                                            <FormLabel>Emisor SMS</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     disabled={saving}
-                                                    placeholder="Nom affiché lors de l'envoi de SMS"
+                                                    placeholder="Nombre mostrado al enviar SMS"
                                                     maxLength={11}
                                                 />
                                             </FormControl>
                                             <FormDescription className="text-xs">
-                                                Ce nom apparaîtra comme expéditeur de vos SMS (maximum 11 caractères)
+                                                Este nombre aparecerá como remitente de sus SMS (máximo 11 caracteres)
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -617,22 +617,21 @@ export default function ProfilePage() {
                                 disabled={saving}
                             >
                                 <X className="h-4 w-4 mr-2" />
-                                Annuler
+                                Cancelar
                             </Button>
                             <Button
-                                type="button"
-                                onClick={form.handleSubmit(onSubmit)}
-                                disabled={saving || !form.formState.isDirty}
+                                type="submit"
+                                disabled={saving}
                             >
                                 {saving ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Enregistrement...
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Guardando...
                                     </>
                                 ) : (
                                     <>
                                         <Save className="h-4 w-4 mr-2" />
-                                        Enregistrer
+                                        Guardar cambios
                                     </>
                                 )}
                             </Button>
@@ -642,4 +641,4 @@ export default function ProfilePage() {
             </Dialog>
         </div>
     );
-}
+};
