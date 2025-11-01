@@ -43,7 +43,7 @@ export default function CommandesPage() {
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
   const [currentItems, setCurrentItems] = useState<CreditRequest[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('TOUS');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<{from?: Date, to?: Date}>({});
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   // Récupérer l'utilisateur connecté
@@ -164,7 +164,7 @@ export default function CommandesPage() {
       // Filtrer par statut si nécessaire
       let filteredHistory = [...history];
       
-      if (statusFilter !== 'TOUS') {
+      if (statusFilter !== 'all') {
         filteredHistory = filteredHistory.filter(
           item => item.status === statusFilter
         );
@@ -337,12 +337,7 @@ export default function CommandesPage() {
                     }}
                   >
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={{
-                        'all': 'Todos',
-                        'PENDING': 'Pendiente',
-                        'VALIDATED': 'Aprobado',
-                        'REJECTED': 'Rechazado'
-                      }[statusFilter] || 'Filtrar por estado'} />
+                      <SelectValue placeholder="Filtrar por estado" defaultValue="all" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
