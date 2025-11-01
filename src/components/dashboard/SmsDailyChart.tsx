@@ -158,14 +158,14 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">
-          Activité des SMS
+          Actividad de SMS
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="chart" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="chart">Graphique</TabsTrigger>
-            <TabsTrigger value="totals">Totaux</TabsTrigger>
+            <TabsTrigger value="chart">Gráfico</TabsTrigger>
+            <TabsTrigger value="totals">Totales</TabsTrigger>
           </TabsList>
           
           <TabsContent value="chart" className="mt-4">
@@ -209,8 +209,8 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
                     height={36}
                     formatter={(value) => {
                       if (value === 'Simples') return <span className="text-xs text-gray-600">Simples</span>;
-                      if (value === 'Groupés') return <span className="text-xs text-gray-600">Groupés</span>;
-                      return <span className="text-xs text-gray-600">Programmés</span>;
+                      if (value === 'Grupales') return <span className="text-xs text-gray-600">Grupales</span>;
+                      return <span className="text-xs text-gray-600">Programados</span>;
                     }}
                   />
                   <Line
@@ -225,7 +225,7 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
                   <Line
                     type="monotone"
                     dataKey="muldes"
-                    name="Groupés"
+                    name="Grupales"
                     stroke={COLORS.muldes}
                     strokeWidth={2}
                     dot={false}
@@ -234,7 +234,7 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
                   <Line 
                     type="monotone" 
                     dataKey="muldesp"
-                    name="Programmés"
+                    name="Programados"
                     stroke={COLORS.muldesp}
                     strokeWidth={2}
                     dot={false}
@@ -249,30 +249,30 @@ export function SmsDailyChart({ unides = [], muldes = [], muldesp = [] }: SmsDai
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <div className="text-sm font-medium text-blue-800">Messages Simples</div>
+                  <div className="text-sm font-medium text-blue-800">Mensajes Simples</div>
                   <div className="text-2xl font-bold text-blue-600">{totals.unides}</div>
                   <div className="text-xs text-blue-500 mt-1">UNIDES</div>
                 </div>
                 
                 <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                  <div className="text-sm font-medium text-green-800">Messages Groupés</div>
+                  <div className="text-sm font-medium text-green-800">Mensajes Grupales</div>
                   <div className="text-2xl font-bold text-green-600">{totals.muldes}</div>
                   <div className="text-xs text-green-500 mt-1">MULDES</div>
                 </div>
                 
                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                  <div className="text-sm font-medium text-purple-800">Messages Programmés</div>
+                  <div className="text-sm font-medium text-purple-800">Mensajes Programados</div>
                   <div className="text-2xl font-bold text-purple-600">{totals.muldesp}</div>
                   <div className="text-xs text-purple-500 mt-1">MULDEP</div>
                 </div>
               </div>
               
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                <div className="text-sm font-medium text-gray-700">Total des SMS</div>
+                <div className="text-sm font-medium text-gray-700">Total de mensajes</div>
                 <div className="text-3xl font-bold text-gray-900">
                   {totals.total}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Tous types confondus</div>
+                <div className="text-xs text-gray-500 mt-1">Todos los tipos incluidos</div>
               </div>
             </div>
           </TabsContent>

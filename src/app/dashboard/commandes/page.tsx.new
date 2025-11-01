@@ -34,7 +34,6 @@ interface CreditRequest {
 export default function CommandesPage() {
   const [quantity, setQuantity] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [history, setHistory] = useState<CreditRequest[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
@@ -43,12 +42,13 @@ export default function CommandesPage() {
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
   const [currentItems, setCurrentItems] = useState<CreditRequest[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('TOUS');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<{from?: Date, to?: Date}>({});
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
-  // Récupérer l'utilisateur connecté
-  const user = getUserFromCookies();
   
+  const user = getUserFromCookies();
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
   // Charger les informations du client
   useEffect(() => {
     const loadClientInfo = async () => {
@@ -58,7 +58,7 @@ export default function CommandesPage() {
         const data = await getClientInfo(user.id);
         setClientInfo(data);
       } catch (error) {
-        console.error('Erreur lors du chargement des informations du client:', error);
+        console.error('Error al cargar la información del cliente:', error);
       }
     };
     
@@ -86,7 +86,7 @@ export default function CommandesPage() {
     let isMounted = true;
     let retryCount = 0;
     const maxRetries = 3;
-    const retryDelay = 2000; // 2 secondes entre les tentatives
+    const retryDelay = 2000;
 
     const loadHistory = async () => {      
       if (!isMounted) return;
@@ -98,16 +98,16 @@ export default function CommandesPage() {
         if (isMounted) {
           setHistory(data);
           setTotalItems(data.length);
-          retryCount = 0; // Réinitialiser le compteur de tentatives en cas de succès
+          retryCount = 0;
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de l\'historique:', error);
+        console.error('Error al cargar el historial:', error);
         
         if (retryCount < maxRetries) {
           retryCount++;
-          console.log(`Nouvelle tentative dans ${retryDelay}ms (${retryCount}/${maxRetries})`);
+          console.log(`Reintentando en ${retryDelay}ms (${retryCount}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
-          loadHistory(); // Nouvelle tentative
+          loadHistory();
         } else {
           if (isMounted) {
             toast.error('Error al cargar los pedidos');
@@ -120,57 +120,45 @@ export default function CommandesPage() {
       }
     };
 
-    // Chargement initial
     loadHistory();
-
-    // Mise à jour automatique toutes les 30 secondes (sans animation)
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible') {
         loadHistory();
       }
-    }, 30000);
+    }, 10000);
 
-    // Nettoyage lors du démontage du composant
     return () => {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [toast]);
+  }, []);
   
-  // Rafraîchir l'historique après une commande
   const refreshHistory = async () => {
     try {
       const data = await getCreditHistory();
       setHistory(data);
       setTotalItems(data.length);
-      setPage(1); // Revenir à la première page après une nouvelle commande
+      setPage(1);
     } catch (error) {
-      console.error('Erreur lors du rafraîchissement de l\'historique:', error);
-      toast.error('Error al actualizar el historial de pedidos');
+      console.error('Error al actualizar el historial:', error);
+      toast.error('Error al actualizar el historial');
     }
   };
   
-  // Calculer le nombre total de pages
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
-  
-  // Fonction pour changer de page
   const paginate = (pageNumber: number) => {
     setPage(pageNumber);
   };
   
-  // Mettre à jour les éléments courants et le nombre total d'élééments
   useEffect(() => {
     if (history.length > 0) {
-      // Filtrer par statut si nécessaire
       let filteredHistory = [...history];
       
-      if (statusFilter !== 'TOUS') {
+      if (statusFilter !== 'all') {
         filteredHistory = filteredHistory.filter(
           item => item.status === statusFilter
         );
       }
       
-      // Filtrer par plage de dates si spécifié
       if (dateFilter.from || dateFilter.to) {
         filteredHistory = filteredHistory.filter(item => {
           const itemDate = new Date(item.createdAt);
@@ -184,7 +172,6 @@ export default function CommandesPage() {
         });
       }
       
-      // Trier les commandes par date (du plus récent au plus ancien)
       const sortedHistory = filteredHistory.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -194,7 +181,6 @@ export default function CommandesPage() {
       const paginatedData = sortedHistory.slice(startIndex, startIndex + pageSize);
       setCurrentItems(paginatedData);
       
-      // Réinitialiser à la première page si le filtre change et que la page actuelle n'est plus valide
       if (page > 1 && (page - 1) * pageSize >= sortedHistory.length) {
         setPage(1);
       }
@@ -214,13 +200,11 @@ export default function CommandesPage() {
     try {
       const user = getUserFromCookies();
       if (!user) {
-        throw new Error('Utilisateur non connecté');
+        throw new Error('Usuario no conectado');
       }
 
-      // Générer une clé unique pour l'idempotence
       const idempotencyKey = uuidv4();
       
-      // Appel API pour l'achat de crédits
       await purchaseCredits({
         clientId: user.id,
         quantity: quantity,
@@ -228,14 +212,12 @@ export default function CommandesPage() {
       });
       
       toast.success(`Pedido de ${quantity} crédito(s) realizado con éxito`);
-      
-      // Réinitialiser le formulaire et rafraîchir l'historique
       setQuantity(1);
       await refreshHistory();
       
     } catch (error) {
-      console.error('Erreur lors de la commande:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
+      console.error('Error en el pedido:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ha ocurrido un error';
       toast.error(`Error en el pedido: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -250,50 +232,49 @@ export default function CommandesPage() {
           Cuenta prepago
         </p>
       </div>
-    
-    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-      <div className="lg:col-span-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>Realizar un pedido</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="quantity">Cantidad de SMS</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Cantidad:</span>
-                  <span className="font-medium">{quantity}</span>
+      
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Realizar un pedido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="quantity">Cantidad de SMS</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="mt-1"
+                  />
                 </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between font-semibold">
-                    <span>Total estimado:</span>
-                    <span className="text-primary">
-                      {estimatedCost !== null ? `${Math.round(estimatedCost)} F CFA` : '-'}
-                    </span>
-                  </div>
-                </div>
-              </div>
                 
-                <div className="relative group mt-4">
+                {estimatedCost !== null && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Precio unitario:</span>
+                      <span className="text-sm font-medium">
+                        {clientInfo?.coutSmsTtc ? `${Math.round(clientInfo.coutSmsTtc)} F CFA` : 'N/D'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Monto total:</span>
+                      <span className="text-sm font-medium">
+                        {estimatedCost ? `${Math.round(estimatedCost)} F CFA` : 'N/D'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="pt-2">
                   <Button 
-                    className={`w-full py-6 text-base font-medium transition-opacity duration-200 bg-primary hover:bg-primary/90 ${
-                      (isLoading || !estimatedCost || hasPendingRequest) ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                    size="lg"
+                    className="w-full"
                     onClick={handlePurchase}
-                    disabled={isLoading || !estimatedCost || hasPendingRequest}
+                    disabled={isLoading || hasPendingRequest}
                   >
                     {isLoading ? (
                       <>
@@ -303,133 +284,145 @@ export default function CommandesPage() {
                     ) : hasPendingRequest ? (
                       'Pedido en espera'
                     ) : (
-                      'Confirmar el pedido'
+                      'Confirmar pedido'
                     )}
                   </Button>
+                  
                   {hasPendingRequest && (
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1.5 px-3 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-                      Un pedido ya está en espera de validación
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-gray-800 rotate-45"></div>
-                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground text-center">
+                      Ya tienes un pedido pendiente de validación
+                    </p>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-
+        
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader className="pb-2">
-              <div className="space-y-1">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
                 <CardTitle>Historial de pedidos</CardTitle>
-                <CardDescription>
-                  Consulte el historial de sus pedidos de SMS
+                <CardDescription className="mt-1">
+                  Consulta el historial de tus pedidos de SMS
                 </CardDescription>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 w-full">
-                <div className="flex items-center space-x-2">
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={(value) => {
-                      setStatusFilter(value);
-                      setPage(1); // Reset à la première page lors du changement de filtre
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={{
-                        'all': 'Todos',
-                        'PENDING': 'Pendiente',
-                        'VALIDATED': 'Aprobado',
-                        'REJECTED': 'Rechazado'
-                      }[statusFilter] || 'Filtrar por estado'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="PENDING">Pendiente</SelectItem>
-                      <SelectItem value="VALIDATED">Aprobado</SelectItem>
-                      <SelectItem value="REJECTED">Rechazado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <Select 
+                  value={statusFilter}
+                  onValueChange={(value) => {
+                    setStatusFilter(value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="PENDING">Pendiente</SelectItem>
+                    <SelectItem value="VALIDATED">Aprobado</SelectItem>
+                    <SelectItem value="REJECTED">Rechazado</SelectItem>
+                  </SelectContent>
+                </Select>
                 
-                <div className="flex items-center space-x-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="date"
-                        variant="outline"
-                        className={cn(
-                          "w-[240px] justify-start text-left font-normal",
-                          !dateFilter && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateFilter?.from ? (
-                          dateFilter.to ? (
-                            <>
-                              {format(dateFilter.from, "dd/MM/yyyy")} -{" "}
-                              {format(dateFilter.to, "dd/MM/yyyy")}
-                            </>
-                          ) : (
-                            format(dateFilter.from, "dd/MM/yyyy")
-                          )
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-[240px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFilter?.from ? (
+                        dateFilter.to ? (
+                          <>
+                            {format(dateFilter.from, 'dd/MM/yyyy')} -{' '}
+                            {format(dateFilter.to, 'dd/MM/yyyy')}
+                          </>
                         ) : (
-                          <span>Filtrar por fecha</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateFilter?.from || new Date()}
-                        selected={dateFilter}
-                        onSelect={(range) => {
-                          setDateFilter({
-                            from: range?.from,
-                            to: range?.to,
-                          });
+                          format(dateFilter.from, 'dd/MM/yyyy')
+                        )
+                      ) : (
+                        <span>Filtrar por fecha</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateFilter?.from || new Date()}
+                      selected={dateFilter}
+                      onSelect={(range: { from?: Date; to?: Date } | undefined) => {
+                        setDateFilter(range || {});
+                        setPage(1);
+                      }}
+                      numberOfMonths={1}
+                      className="rounded-md border"
+                    />
+                    <div className="p-2 text-center">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setDateFilter({});
                           setPage(1);
                         }}
-                        numberOfMonths={1}
-                        className="rounded-md border"
-                      />
-                      <div className="p-2 text-center text-sm">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            setDateFilter({});
-                            setPage(1);
-                          }}
-                        >
-                          Reiniciar
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                      >
+                        Limpiar filtro
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardHeader>
+            
             <CardContent>
               {isLoadingHistory ? (
-                <div className="text-center py-4">Cargando el historial...</div>
-              ) : history.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  No hay pedidos recientes
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : currentItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {statusFilter !== 'all' || dateFilter.from || dateFilter.to
+                      ? 'No se encontraron pedidos con los filtros seleccionados'
+                      : 'No hay pedidos recientes'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {currentItems.map((item) => (
                     <div key={item.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-col sm:flex-row justify-between gap-4">
                         <div>
-                          <p className="text-sm font-medium">Pedido #{item.requestCode}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Pedido #{item.requestCode}</span>
+                            <span 
+                              className={cn(
+                                'px-2 py-0.5 rounded-full text-xs font-medium',
+                                item.status === 'VALIDATED' && 'bg-green-100 text-green-800',
+                                item.status === 'PENDING' && 'bg-yellow-100 text-yellow-800',
+                                item.status === 'REJECTED' && 'bg-red-100 text-red-800'
+                              )}
+                            >
+                              {item.status === 'VALIDATED' && 'Aprobado'}
+                              {item.status === 'PENDING' && 'Pendiente'}
+                              {item.status === 'REJECTED' && 'Rechazado'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
                             {format(new Date(item.createdAt), 'PPP', { locale: fr })}
                           </p>
+                          {item.status === 'REJECTED' && item.rejectReason && (
+                            <p className="text-sm text-red-600 mt-2">
+                              <span className="font-medium">Motivo del rechazo:</span> {item.rejectReason}
+                            </p>
+                          )}
                         </div>
+                        
                         <div className="text-right">
                           <p className="font-medium">{item.quantity} créditos</p>
                           <p className="text-sm text-muted-foreground">
@@ -442,16 +435,17 @@ export default function CommandesPage() {
                 </div>
               )}
             </CardContent>
-            <CardFooter>
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 w-full">
-                <div className="flex items-center space-x-2">
+            
+            {totalPages > 1 && (
+              <CardFooter className="border-t pt-4">
+                <div className="flex items-center justify-between w-full">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => paginate(1)}
                     disabled={page <= 1}
                     className="h-8 w-8 p-0"
-                    title="Première page"
+                    title="Primera página"
                   >
                     &laquo;
                   </Button>
@@ -461,20 +455,22 @@ export default function CommandesPage() {
                     onClick={() => paginate(Math.max(1, page - 1))}
                     disabled={page <= 1}
                     className="h-8 w-8 p-0"
-                    title="Page précédente"
+                    title="Página anterior"
                   >
                     &lsaquo;
                   </Button>
-                  <div className="px-4 text-sm">
+                  
+                  <div className="text-sm text-muted-foreground">
                     Página {page} de {totalPages}
                   </div>
+                  
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => paginate(Math.min(totalPages, page + 1))}
                     disabled={page >= totalPages}
                     className="h-8 w-8 p-0"
-                    title="Page suivante"
+                    title="Siguiente página"
                   >
                     &rsaquo;
                   </Button>
@@ -484,26 +480,29 @@ export default function CommandesPage() {
                     onClick={() => paginate(totalPages)}
                     disabled={page >= totalPages}
                     className="h-8 w-8 p-0"
-                    title="Dernière page"
+                    title="Última página"
                   >
                     &raquo;
                   </Button>
                 </div>
-                <div>
-                  <Button 
-                    variant="outline"
-                    size="sm" 
-                    onClick={refreshHistory}
-                    disabled={isLoadingHistory}
-                  >
-                    {isLoadingHistory ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                    )}
-                    Actualizar
-                  </Button>
-                </div>
+              </CardFooter>
+            )}
+            
+            <CardFooter className="border-t pt-4">
+              <div className="flex justify-end w-full">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshHistory}
+                  disabled={isLoadingHistory}
+                >
+                  {isLoadingHistory ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Actualizar
+                </Button>
               </div>
             </CardFooter>
           </Card>
@@ -511,3 +510,4 @@ export default function CommandesPage() {
       </div>
     </div>
   );
+}
